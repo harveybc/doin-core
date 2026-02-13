@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DOIN: A Game-Theoretic Framework for Decentralized Multi-Model Optimization via Proof of Optimization</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,700;1,400;1,700&family=STIX+Two+Math&display=swap');
+
+@page {
+  size: letter;
+  margin: 0.75in 0.625in 1in 0.625in;
+  @bottom-center {
+    content: counter(page);
+    font-size: 9pt;
+    font-family: 'Times New Roman', 'STIX Two Text', serif;
+  }
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Times New Roman', 'STIX Two Text', serif;
+  font-size: 10pt;
+  line-height: 1.15;
+  color: #000;
+  text-align: justify;
+  column-count: 2;
+  column-gap: 0.25in;
+  orphans: 3;
+  widows: 3;
+}
+
+/* Title block spans full width */
+.title-block {
+  column-span: all;
+  text-align: center;
+  margin-bottom: 18pt;
+}
+
+.paper-title {
+  font-size: 24pt;
+  font-weight: normal;
+  margin-bottom: 12pt;
+  line-height: 1.1;
+}
+
+.author-name {
+  font-size: 11pt;
+  font-weight: bold;
+  margin-bottom: 2pt;
+}
+
+.author-affil {
+  font-size: 10pt;
+  font-style: italic;
+  margin-bottom: 14pt;
+}
+
+/* Abstract */
+.abstract-block {
+  column-span: all;
+  margin: 0 0.375in 14pt 0.375in;
+}
+
+.abstract-block .section-title-abs {
+  font-size: 9pt;
+  font-weight: bold;
+  font-style: italic;
+  text-align: center;
+  margin-bottom: 4pt;
+}
+
+.abstract-block p {
+  font-size: 9pt;
+  line-height: 1.2;
+  text-align: justify;
+}
+
+.keywords {
+  column-span: all;
+  margin: 0 0.375in 14pt 0.375in;
+  font-size: 9pt;
+  line-height: 1.2;
+}
+
+.keywords em { font-style: italic; font-weight: bold; }
+
+/* Section headings */
+h2 {
+  font-size: 10pt;
+  font-weight: normal;
+  text-align: center;
+  text-transform: uppercase;
+  margin-top: 12pt;
+  margin-bottom: 6pt;
+  font-variant: small-caps;
+  letter-spacing: 0.5pt;
+}
+
+h3 {
+  font-size: 10pt;
+  font-style: italic;
+  font-weight: normal;
+  margin-top: 8pt;
+  margin-bottom: 4pt;
+}
+
+p {
+  text-indent: 0.15in;
+  margin-bottom: 2pt;
+}
+
+p.no-indent { text-indent: 0; }
+
+/* Math */
+.math {
+  font-family: 'STIX Two Math', 'Times New Roman', serif;
+  font-style: italic;
+}
+
+.math-block {
+  display: block;
+  text-align: center;
+  margin: 8pt 0;
+  font-family: 'STIX Two Math', 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 10pt;
+  line-height: 1.4;
+  break-inside: avoid;
+}
+
+.math-block .eq-num {
+  float: right;
+  font-style: normal;
+}
+
+.var { font-style: italic; font-family: 'STIX Two Math', 'Times New Roman', serif; }
+.fn { font-style: normal; font-family: 'STIX Two Math', 'Times New Roman', serif; }
+sub, sup { font-size: 0.75em; }
+
+/* Tables */
+table {
+  border-collapse: collapse;
+  margin: 8pt auto;
+  font-size: 9pt;
+  break-inside: avoid;
+}
+
+table caption {
+  font-size: 8pt;
+  text-align: center;
+  margin-bottom: 4pt;
+  font-variant: small-caps;
+}
+
+th, td {
+  border: 1px solid #000;
+  padding: 2pt 5pt;
+  text-align: center;
+}
+
+th { font-weight: bold; background: #eee; }
+
+/* Figures / full-width blocks */
+.full-width {
+  column-span: all;
+  break-inside: avoid;
+  margin: 8pt 0;
+}
+
+/* References */
+.references {
+  font-size: 8pt;
+  line-height: 1.15;
+}
+
+.references p {
+  text-indent: 0;
+  padding-left: 0.2in;
+  margin-bottom: 2pt;
+}
+
+.references .ref-num {
+  display: inline-block;
+  width: 0.2in;
+  margin-left: -0.2in;
+  text-align: left;
+}
+
+/* Definition list */
+.def-list { margin: 4pt 0 4pt 0.15in; }
+.def-list dt { font-style: italic; display: inline; }
+.def-list dt::after { content: ': '; }
+.def-list dd { display: inline; margin: 0; }
+.def-list dd::after { content: ''; display: block; margin-bottom: 2pt; }
+
+/* Bullet lists */
+ul.compact { margin: 4pt 0 4pt 0.25in; font-size: 10pt; }
+ul.compact li { margin-bottom: 1pt; }
+
+/* Page break helper */
+.page-break { break-before: page; column-span: all; }
+
+/* Strategy matrix */
+.payoff-table { margin: 8pt auto; }
+.payoff-table td { min-width: 0.8in; font-size: 9pt; }
+</style>
+</head>
+<body>
+
+<div class="title-block">
+  <div class="paper-title">DOIN: A Game-Theoretic Framework for Decentralized<br>Multi-Model Optimization via Proof of Optimization</div>
+  <div class="author-name">Harvey Bastidas</div>
+  <div class="author-affil">School of Systems and Computer Engineering<br>Universidad del Valle, Cali, Colombia<br>harvey.bastidas@correounivalle.edu.co</div>
+</div>
+
+<div class="abstract-block">
+  <div class="section-title-abs">Abstract</div>
+  <p>We present DOIN, a Decentralized Optimization and Inference Network that repurposes blockchain consensus for verified machine learning optimization. Rather than expending computational resources on cryptographic puzzles as in Proof of Work (PoW), DOIN introduces <em>Proof of Optimization</em> (PoO), a novel consensus mechanism in which block generation is triggered by verified performance improvements across multiple simultaneous optimization domains. We formalize the system model, define a multi-domain weighting scheme called Verified Useful Work (VUW), and prove that honest optimization constitutes a Nash equilibrium under our incentive structure. A commit-reveal protocol with quorum-based verification using per-evaluator synthetic data provides robustness against front-running, parameter theft, and collusion attacks. We identify 25 attack vectors and implement 10 hardening measures, achieving security guarantees comparable to established blockchain systems while converting all consensus computation into productive ML optimization work. The reference implementation comprises five Python packages with 291 tests and a plugin architecture for extensibility.</p>
+</div>
+
+<div class="keywords">
+  <em>Index Terms</em>&mdash;decentralized optimization, blockchain consensus, proof of useful work, federated learning, game theory, machine learning, Nash equilibrium
+</div>
+
+<!-- I. INTRODUCTION -->
+<h2>I. Introduction</h2>
+
+<p class="no-indent">The training and optimization of machine learning models has become one of the most computationally intensive activities in modern computing. Large-scale optimization is typically performed in centralized data centers operated by a small number of organizations, creating bottlenecks in cost, access, and resilience [1]. Simultaneously, blockchain networks such as Bitcoin [2] collectively expend enormous computational resources&mdash;estimated at over 150 TWh annually&mdash;on cryptographic puzzles that produce no direct scientific or economic value beyond consensus security.</p>
+
+<p>This paper addresses a natural question: <em>can the computational work required for blockchain consensus be redirected toward useful machine learning optimization?</em> We answer affirmatively by introducing the Decentralized Optimization and Inference Network (DOIN), a system that replaces Proof of Work with <em>Proof of Optimization</em> (PoO). In DOIN, nodes earn the right to propose blocks by demonstrating verified improvements to ML models across one or more optimization domains.</p>
+
+<p>The key challenge in designing such a system is ensuring that claimed optimization improvements are genuine. Unlike cryptographic hash puzzles, where verification is trivial, verifying ML optimization quality requires evaluating model performance&mdash;a process that is itself computationally expensive and susceptible to manipulation. DOIN addresses this through a combination of commit-reveal protocols, quorum-based verification with per-evaluator synthetic data, and an asymmetric reputation system that makes dishonesty a dominated strategy.</p>
+
+<p>Our contributions are as follows:</p>
+
+<ul class="compact">
+  <li>A formal system model for decentralized multi-domain ML optimization with configurable node roles (Section III).</li>
+  <li>The Proof of Optimization consensus mechanism with Verified Useful Work (VUW) weighting and dynamic threshold adjustment (Section IV).</li>
+  <li>A game-theoretic analysis proving that honest optimization is a Nash equilibrium under the DOIN incentive structure (Section V).</li>
+  <li>A comprehensive security analysis covering 25 attack vectors with 10 implemented hardening measures (Section VI).</li>
+  <li>A reference implementation with 291 tests demonstrating practical feasibility (Section VII).</li>
+</ul>
+
+<!-- II. RELATED WORK -->
+<h2>II. Related Work</h2>
+
+<h3>A. Federated Learning</h3>
+
+<p class="no-indent">Federated learning (FL), introduced by McMahan et al. [3], enables distributed model training while preserving data locality. FedAvg and its variants [4] aggregate locally computed gradients at a central server. However, FL retains a centralized coordinator that represents a single point of failure and trust. DOIN eliminates this dependency by replacing the central aggregator with blockchain-based consensus, making coordination fully decentralized.</p>
+
+<h3>B. Blockchain-Based Machine Learning</h3>
+
+<p class="no-indent">Several systems have explored combining blockchain with machine learning. FLChain [5] places federated learning on a blockchain but retains the FL aggregation model. DInEMMo [6] proposes decentralized inference but does not address optimization consensus. Ocean Protocol [7] decentralizes data marketplaces but not the optimization process itself. Unlike these systems, DOIN makes ML optimization the <em>consensus mechanism itself</em>, not merely an application running atop a blockchain.</p>
+
+<h3>C. Proof of Useful Work</h3>
+
+<p class="no-indent">The concept of replacing hash-based PoW with scientifically useful computation has been explored in several contexts. Primecoin [8] searches for prime number chains, while Gridcoin [9] rewards BOINC scientific computing contributions. Ball et al. [10] formalized proof of useful work theoretically. These systems, however, either use trivially verifiable problems or rely on external trust anchors. DOIN advances the field by providing a verification mechanism based on per-evaluator synthetic data generation that is both rigorous and domain-agnostic.</p>
+
+<h3>D. Decentralized Optimization</h3>
+
+<p class="no-indent">Distributed optimization has a rich history in the operations research and control communities [11]. ADMM-based distributed methods [12] and gossip-based protocols [13] enable optimization without a central coordinator. However, these methods assume cooperative participants. DOIN extends decentralized optimization to adversarial settings using game-theoretic incentive design.</p>
+
+<!-- III. SYSTEM MODEL -->
+<h2>III. System Model</h2>
+
+<h3>A. Network and Domains</h3>
+
+<p class="no-indent">We define the DOIN network as a tuple (&Nscr;, &Dscr;, &Cscr;) where:</p>
+
+<dl class="def-list">
+  <dt><span class="var">N</span> = {<span class="var">n</span><sub>1</sub>, ..., <span class="var">n</span><sub>|<span class="var">N</span>|</sub>}</dt>
+  <dd>is the set of participating nodes</dd>
+  <dt><span class="var">D</span> = {<span class="var">d</span><sub>1</sub>, ..., <span class="var">d</span><sub>|<span class="var">D</span>|</sub>}</dt>
+  <dd>is the set of active optimization domains</dd>
+  <dt><span class="var">C</span> = (<span class="var">B</span><sub>0</sub>, <span class="var">B</span><sub>1</sub>, ...)</dt>
+  <dd>is the blockchain, an ordered sequence of blocks</dd>
+</dl>
+
+<p>Each domain <span class="var">d</span> &isin; <span class="var">D</span> represents an optimization problem defined by a model architecture, a loss function, and a dataset specification. Domains are registered on-chain and may be created by any node willing to stake a minimum deposit.</p>
+
+<p>An <em>optimum</em> (plural: <em>optimae</em>) is a tuple <span class="var">o</span> = (<span class="var">d</span>, <span class="var">&theta;</span>, <span class="var">p</span>, <span class="var">n</span>, <span class="var">t</span>) representing the best-known parameters <span class="var">&theta;</span> for domain <span class="var">d</span> with verified performance <span class="var">p</span>, submitted by node <span class="var">n</span> at time <span class="var">t</span>. The chain maintains a registry of current optimae for all active domains.</p>
+
+<h3>B. Node Roles</h3>
+
+<p class="no-indent">Each node <span class="var">n</span> &isin; <span class="var">N</span> may assume one or more of three roles, configurable at runtime:</p>
+
+<p><em>Optimizer.</em> An optimizer node performs gradient-based or black-box optimization on one or more domains. It submits candidate parameter improvements along with performance claims to the network.</p>
+
+<p><em>Evaluator.</em> An evaluator verifies performance claims by independently evaluating submitted parameters against synthetic test data. Evaluators are selected randomly for each verification task.</p>
+
+<p><em>Relay.</em> A relay node participates in block propagation and chain maintenance without performing optimization or evaluation. Relays earn reduced rewards for network maintenance.</p>
+
+<h3>C. Task Queue Architecture</h3>
+
+<p class="no-indent">DOIN employs a pull-based task queue with strict priority ordering. Each node maintains a local queue that sources tasks from the network. The priority hierarchy is:</p>
+
+<div class="math-block">
+  <span class="fn">Priority</span>: <span class="fn">verification</span> &gt; <span class="fn">inference</span> &gt; <span class="fn">optimization</span>
+  <span class="eq-num">(1)</span>
+</div>
+
+<p>Verification tasks take precedence to ensure timely block production. This architecture ensures that the system remains responsive to consensus requirements while utilizing remaining capacity for productive optimization work.</p>
+
+<!-- IV. PROOF OF OPTIMIZATION CONSENSUS -->
+<h2>IV. Proof of Optimization Consensus</h2>
+
+<h3>A. Block Generation Threshold</h3>
+
+<p class="no-indent">A node may propose a new block when the weighted sum of its verified performance increments across all domains exceeds a dynamic threshold <span class="var">T</span>. Formally, a node <span class="var">n</span> qualifies to produce a block when:</p>
+
+<div class="math-block">
+  &sum;<sub><span class="var">d</span> &isin; <span class="var">D</span></sub> <span class="var">eff</span>(<span class="var">n</span>, <span class="var">d</span>) &ge; <span class="var">T</span>
+  <span class="eq-num">(2)</span>
+</div>
+
+<p>where <span class="var">eff</span>(<span class="var">n</span>, <span class="var">d</span>) is the effective increment contributed by node <span class="var">n</span> to domain <span class="var">d</span>, defined below. Crucially, the sum ranges over <em>all</em> active domains, allowing a node to accumulate increments across multiple optimization problems to meet the threshold.</p>
+
+<h3>B. Verified Useful Work (VUW) Weighting</h3>
+
+<p class="no-indent">Not all optimization domains contribute equally to consensus. The VUW scheme assigns dynamic weights to each domain based on network demand and optimization difficulty. For domain <span class="var">d</span>, the weight is:</p>
+
+<div class="math-block">
+  <span class="var">w</span>(<span class="var">d</span>) = <span class="var">w</span><sub>base</sub>(<span class="var">d</span>) &middot; <span class="var">&phi;</span><sub>demand</sub>(<span class="var">d</span>) &middot; (1 + <span class="var">&phi;</span><sub>progress</sub>(<span class="var">d</span>)) &middot; <span class="var">v</span>(<span class="var">d</span>)
+  <span class="eq-num">(3)</span>
+</div>
+
+<p>where:</p>
+
+<ul class="compact">
+  <li><span class="var">w</span><sub>base</sub>(<span class="var">d</span>) &isin; &#x211D;<sup>+</sup> is a governance-assigned base weight reflecting the domain's intrinsic importance.</li>
+  <li><span class="var">&phi;</span><sub>demand</sub>(<span class="var">d</span>) = <span class="var">q</span>(<span class="var">d</span>) / <span class="var">q&#772;</span> is the demand factor, the ratio of pending inference queries for domain <span class="var">d</span> to the network average.</li>
+  <li><span class="var">&phi;</span><sub>progress</sub>(<span class="var">d</span>) captures optimization difficulty: domains where progress is harder receive higher weight, incentivizing work on challenging problems.</li>
+  <li><span class="var">v</span>(<span class="var">d</span>) &isin; {0, 1} is the verification strength: <span class="var">v</span>(<span class="var">d</span>) = 1 if and only if the domain supports synthetic data verification; otherwise <span class="var">v</span>(<span class="var">d</span>) = 0.</li>
+</ul>
+
+<p>The binary verification strength is a critical design choice: <em>domains without synthetic data verification contribute zero weight to consensus</em>. This ensures that all optimization work counted toward block production is independently verifiable, preventing gaming through unverifiable claims.</p>
+
+<h3>C. Effective Increment</h3>
+
+<p class="no-indent">The effective increment for node <span class="var">n</span> on domain <span class="var">d</span> combines the raw performance improvement with domain weight and node reputation:</p>
+
+<div class="math-block">
+  <span class="var">eff</span>(<span class="var">n</span>, <span class="var">d</span>) = <span class="var">&Delta;p</span>(<span class="var">n</span>, <span class="var">d</span>) &middot; <span class="var">w</span>(<span class="var">d</span>) &middot; <span class="fn">log</span>(1 + <span class="var">r</span>(<span class="var">n</span>)) / <span class="fn">log</span>(1 + 10)
+  <span class="eq-num">(4)</span>
+</div>
+
+<p>where <span class="var">&Delta;p</span>(<span class="var">n</span>, <span class="var">d</span>) is the verified raw performance increment (difference between the submitted performance and the current best-known performance for domain <span class="var">d</span>), <span class="var">w</span>(<span class="var">d</span>) is the VUW domain weight from (3), and <span class="var">r</span>(<span class="var">n</span>) &isin; [0, &infin;) is the reputation score of node <span class="var">n</span>.</p>
+
+<p>The logarithmic reputation scaling serves two purposes. First, it prevents high-reputation nodes from dominating block production, as the marginal value of additional reputation diminishes. Second, the normalization by log(1 + 10) ensures that a node with reputation 10 (a reasonable established participant) contributes its raw weighted increment without attenuation.</p>
+
+<h3>D. Dynamic Threshold Adjustment</h3>
+
+<p class="no-indent">The threshold <span class="var">T</span> is adjusted periodically to maintain a target block time <span class="var">&tau;</span><sub>target</sub>, analogous to Bitcoin's difficulty adjustment. After each adjustment epoch of <span class="var">E</span> blocks:</p>
+
+<div class="math-block">
+  <span class="var">T</span><sub>new</sub> = <span class="var">T</span><sub>old</sub> &middot; (<span class="var">&tau;</span><sub>actual</sub> / <span class="var">&tau;</span><sub>target</sub>)<sup>&minus;1</sup> &middot; <span class="fn">clamp</span>(0.25, 4.0)
+  <span class="eq-num">(5)</span>
+</div>
+
+<p>where <span class="var">&tau;</span><sub>actual</sub> is the mean observed block time over the epoch. The clamp factor bounds the adjustment to prevent instability from sudden changes in network optimization capacity. If blocks are produced too quickly (optimization is easy), the threshold increases; if too slowly, it decreases.</p>
+
+<h3>E. Fork Choice Rule</h3>
+
+<p class="no-indent">DOIN employs a <em>heaviest-chain</em> rule rather than the longest-chain rule used in Bitcoin. The chain weight is defined as the cumulative verified optimization work:</p>
+
+<div class="math-block">
+  <span class="var">W</span>(<span class="var">C</span>) = &sum;<sub><span class="var">B</span> &isin; <span class="var">C</span></sub> &sum;<sub><span class="var">d</span> &isin; <span class="var">D</span></sub> <span class="var">eff</span>(<span class="var">B</span>, <span class="var">d</span>)
+  <span class="eq-num">(6)</span>
+</div>
+
+<p>This rule ensures that the canonical chain is the one containing the most verified optimization work, aligning the fork choice incentive with the system's primary objective of maximizing useful computation.</p>
+
+<!-- V. GAME-THEORETIC ANALYSIS -->
+<h2>V. Game-Theoretic Analysis</h2>
+
+<p class="no-indent">This section constitutes the core theoretical contribution of this paper. We model DOIN as a strategic game and prove that honest participation is a Nash equilibrium.</p>
+
+<h3>A. Game Formulation</h3>
+
+<p class="no-indent">Define the DOIN game as <span class="var">G</span> = (<span class="var">N</span>, <span class="var">S</span>, <span class="var">u</span>) where <span class="var">N</span> is the set of nodes (players), <span class="var">S</span> = <span class="var">S</span><sub>1</sub> &times; ... &times; <span class="var">S</span><sub>|<span class="var">N</span>|</sub> is the joint strategy space, and <span class="var">u</span>: <span class="var">S</span> &rarr; &#x211D;<sup>|<span class="var">N</span>|</sup> is the payoff function. Each node <span class="var">n<sub>i</sub></span> selects a strategy <span class="var">s<sub>i</sub></span> &isin; <span class="var">S<sub>i</sub></span> = {<span class="fn">honest</span>, <span class="fn">inflate</span>, <span class="fn">deflate</span>, <span class="fn">collude</span>, <span class="fn">free-ride</span>}.</p>
+
+<h3>B. Commit-Reveal Protocol</h3>
+
+<p class="no-indent">To prevent front-running and parameter theft, DOIN employs a two-phase commit-reveal protocol. In the commit phase, an optimizer publishes:</p>
+
+<div class="math-block">
+  <span class="var">c</span> = <span class="fn">H</span>(<span class="var">&theta;</span> &Vert; <span class="var">&eta;</span>)
+  <span class="eq-num">(7)</span>
+</div>
+
+<p>where <span class="var">&theta;</span> represents the optimized parameters, <span class="var">&eta;</span> is a random nonce, <span class="fn">H</span> is a cryptographic hash function, and &Vert; denotes concatenation. In the subsequent reveal phase, the optimizer publishes (<span class="var">&theta;</span>, <span class="var">&eta;</span>), and the network verifies that <span class="fn">H</span>(<span class="var">&theta;</span> &Vert; <span class="var">&eta;</span>) = <span class="var">c</span>.</p>
+
+<p>This prevents attack vector #13 (front-running), where an adversary observing an optimization submission could rush to claim it, and attack vector #19 (parameter theft), where submitted parameters could be copied before attribution is established.</p>
+
+<h3>C. Quorum Verification with Per-Evaluator Synthetic Data</h3>
+
+<p class="no-indent">Upon a valid reveal, the protocol selects a quorum of <span class="var">K</span> evaluators from the pool of <span class="var">M</span> eligible evaluators using a deterministic but unpredictable selection function:</p>
+
+<div class="math-block">
+  <span class="var">Q</span> = <span class="fn">Select</span><sub><span class="var">K</span></sub>(<span class="var">M</span>, <span class="fn">H</span>(<span class="var">c</span> &Vert; <span class="var">h</span><sub>tip</sub>))
+  <span class="eq-num">(8)</span>
+</div>
+
+<p>where <span class="var">h</span><sub>tip</sub> is the hash of the current chain tip at selection time. Each selected evaluator <span class="var">e<sub>j</sub></span> &isin; <span class="var">Q</span> independently generates synthetic evaluation data from a deterministic seed:</p>
+
+<div class="math-block">
+  <span class="var">seed</span><sub><span class="var">j</span></sub> = <span class="fn">H</span>(<span class="var">c</span> &Vert; <span class="var">d</span> &Vert; <span class="var">e<sub>j</sub></span> &Vert; <span class="var">h</span><sub>tip</sub>)
+  <span class="eq-num">(9)</span>
+</div>
+
+<p>This design has three critical properties. First, each evaluator uses <em>different</em> synthetic data, preventing an optimizer from overfitting to a single test distribution. Second, the optimizer cannot predict the seeds at optimization time because it does not know (a) which evaluators will be selected, as this depends on the chain tip at selection time, and (b) the chain tip at selection time, as it changes with each block. Third, the seeds are deterministic given the inputs, allowing any node to independently verify the evaluation results.</p>
+
+<p><strong>Theorem 1</strong> (Quorum Unpredictability). <em>For an optimizer with fraction</em> <span class="var">f</span> &lt; 1/2 <em>of network evaluation capacity, the probability of predicting all</em> <span class="var">K</span> <em>evaluation seeds is bounded by</em> <span class="var">f</span><sup><span class="var">K</span></sup>.</p>
+
+<p><em>Proof.</em> The seed for each evaluator depends on the evaluator's identity and the chain tip. Controlling the chain tip requires majority evaluation capacity. For <span class="var">f</span> &lt; 1/2, each evaluator selection is independent with probability at most <span class="var">f</span> of being a colluding node. The probability that all <span class="var">K</span> evaluators are controlled is <span class="var">f</span><sup><span class="var">K</span></sup>. For <span class="var">K</span> = 5 and <span class="var">f</span> = 0.3, this is 0.3<sup>5</sup> &asymp; 0.00243. &marker;</p>
+
+<h3>D. Incentive Model</h3>
+
+<p class="no-indent">Let <span class="var">p</span><sub>claimed</sub> denote the performance reported by the optimizer and <span class="var">p</span><sub>verified</sub> the median performance measured by the evaluator quorum. Define the performance gap as <span class="var">g</span> = <span class="var">p</span><sub>claimed</sub> &minus; <span class="var">p</span><sub>verified</sub>. The reward fraction is a piecewise function:</p>
+
+<div class="math-block">
+  <span class="var">&rho;</span>(<span class="var">g</span>) = &lcub;<br>
+  &emsp;<span class="fn">min</span>(1 + |<span class="var">g</span>| &middot; <span class="var">&beta;</span>, <span class="var">&rho;</span><sub>max</sub>), &emsp; if <span class="var">g</span> &lt; 0<br>
+  &emsp;1.0, &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; if <span class="var">g</span> = 0<br>
+  &emsp;1 &minus; <span class="var">g</span>/<span class="var">&epsilon;</span> &middot; (1 &minus; <span class="var">&rho;</span><sub>min</sub>), &emsp;&emsp; if 0 &lt; <span class="var">g</span> &le; <span class="var">&epsilon;</span><br>
+  &emsp;0, &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; if <span class="var">g</span> &gt; <span class="var">&epsilon;</span>
+  <span class="eq-num">(10)</span>
+</div>
+
+<p>where <span class="var">&beta;</span> is the bonus scaling factor, <span class="var">&rho;</span><sub>max</sub> is the maximum bonus multiplier (e.g., 1.1), <span class="var">&rho;</span><sub>min</sub> is the minimum partial reward fraction (e.g., 0.1), and <span class="var">&epsilon;</span> is the tolerance threshold. The capping of the bonus at <span class="var">&rho;</span><sub>max</sub> is essential: it removes the incentive to deliberately under-report performance, as the bonus from doing so is bounded.</p>
+
+<h3>E. Reputation System</h3>
+
+<p class="no-indent">Each node <span class="var">n</span> maintains a reputation score <span class="var">r</span>(<span class="var">n</span>) that evolves via exponentially weighted moving average (EMA) with asymmetric updates:</p>
+
+<div class="math-block">
+  <span class="var">r</span><sub><span class="var">t</span>+1</sub>(<span class="var">n</span>) = <span class="var">&alpha;</span> &middot; <span class="var">r</span><sub><span class="var">t</span></sub>(<span class="var">n</span>) + (1 &minus; <span class="var">&alpha;</span>) &middot; <span class="var">&delta;</span>(<span class="var">n</span>, <span class="var">t</span>)
+  <span class="eq-num">(11)</span>
+</div>
+
+<p>where <span class="var">&alpha;</span> = 2<sup>&minus;1/<span class="var">H</span></sup> with half-life <span class="var">H</span> = 1 week (measured in blocks), and:</p>
+
+<div class="math-block">
+  <span class="var">&delta;</span>(<span class="var">n</span>, <span class="var">t</span>) = &lcub;<br>
+  &emsp;+<span class="var">R</span><sub>reward</sub>, &emsp; if verification succeeds<br>
+  &emsp;&minus;3 &middot; <span class="var">R</span><sub>reward</sub>, &ensp; if verification fails
+  <span class="eq-num">(12)</span>
+</div>
+
+<p>The 3:1 penalty-to-reward asymmetry ensures that a single failed verification erases the reputation gains from three successful ones. A node must maintain <span class="var">r</span>(<span class="var">n</span>) &ge; <span class="var">r</span><sub>min</sub> to participate in consensus, creating a meaningful barrier to Sybil attacks: new identities start with zero reputation and cannot immediately influence the system.</p>
+
+<p>The EMA decay with a one-week half-life serves an additional purpose: it prevents <em>reputation farming</em>, where a node builds reputation through honest behavior and then exploits it in a single large attack. Historical reputation contributions decay exponentially, so maintaining high reputation requires sustained honest participation.</p>
+
+<h3>F. Nash Equilibrium Analysis</h3>
+
+<p class="no-indent"><strong>Theorem 2</strong> (Honest Optimization is a Nash Equilibrium). <em>Under the DOIN incentive structure with quorum size</em> <span class="var">K</span> &ge; 3 <em>and penalty ratio</em> <span class="var">&gamma;</span> = 3, <em>the strategy profile where all nodes play</em> <span class="fn">honest</span> <em>is a Nash equilibrium.</em></p>
+
+<p><em>Proof.</em> We show that no unilateral deviation from <span class="fn">honest</span> is profitable.</p>
+
+<p><em>Case 1: Deviation to</em> <span class="fn">inflate</span>. A node reports <span class="var">p</span><sub>claimed</sub> &gt; <span class="var">p</span><sub>actual</sub>. With probability 1 &minus; <span class="var">f</span><sup><span class="var">K</span></sup> (near certainty for <span class="var">K</span> &ge; 3), at least one honest evaluator detects the discrepancy. If <span class="var">g</span> &gt; <span class="var">&epsilon;</span>, the reward is zero and reputation decreases by 3<span class="var">R</span><sub>reward</sub>. Expected payoff:</p>
+
+<div class="math-block">
+  <span class="var">u</span>(<span class="fn">inflate</span>) = <span class="var">f</span><sup><span class="var">K</span></sup> &middot; <span class="var">R</span> + (1 &minus; <span class="var">f</span><sup><span class="var">K</span></sup>) &middot; (&minus;3<span class="var">R</span>) &lt; 0 &lt; <span class="var">R</span> = <span class="var">u</span>(<span class="fn">honest</span>)
+  <span class="eq-num">(13)</span>
+</div>
+
+<p><em>Case 2: Deviation to</em> <span class="fn">deflate</span>. A node reports <span class="var">p</span><sub>claimed</sub> &lt; <span class="var">p</span><sub>actual</sub> to collect the bonus. By equation (10), the bonus is capped at <span class="var">&rho;</span><sub>max</sub>. For <span class="var">&rho;</span><sub>max</sub> = 1.1:</p>
+
+<div class="math-block">
+  <span class="var">u</span>(<span class="fn">deflate</span>) &le; 1.1<span class="var">R</span>
+  <span class="eq-num">(14)</span>
+</div>
+
+<p>However, deflation reduces the effective increment by equation (4), requiring more optimization rounds to meet the block threshold. The net expected payoff per unit time is lower than honest reporting.</p>
+
+<p><em>Case 3: Deviation to</em> <span class="fn">collude</span>. Collusion requires controlling all <span class="var">K</span> evaluators. By Theorem 1, this probability is <span class="var">f</span><sup><span class="var">K</span></sup>. For a coalition controlling fraction <span class="var">f</span> of evaluators with <span class="var">K</span> = 5:</p>
+
+<table class="payoff-table">
+  <caption>TABLE I: Probability of Successful Collusion</caption>
+  <tr><th><span class="var">f</span></th><th>0.1</th><th>0.2</th><th>0.3</th><th>0.4</th></tr>
+  <tr><td><span class="var">f</span><sup>5</sup></td><td>10<sup>&minus;5</sup></td><td>3.2&times;10<sup>&minus;4</sup></td><td>2.4&times;10<sup>&minus;3</sup></td><td>1.0&times;10<sup>&minus;2</sup></td></tr>
+</table>
+
+<p>The expected penalty from failed collusion dominates any potential gain.</p>
+
+<p><em>Case 4: Deviation to</em> <span class="fn">free-ride</span>. A free-riding node submits no optimization work. By equation (2), it cannot meet the block threshold and earns zero rewards. Thus <span class="var">u</span>(<span class="fn">free-ride</span>) = 0 &lt; <span class="var">R</span> = <span class="var">u</span>(<span class="fn">honest</span>).</p>
+
+<p>Since no unilateral deviation is profitable, the all-honest strategy profile is a Nash equilibrium. &marker;</p>
+
+<h3>G. Payoff Matrix</h3>
+
+<p class="no-indent">Table II summarizes the expected payoffs for a single optimizer node against an honest network, assuming <span class="var">K</span> = 5, <span class="var">f</span> = 0.1, <span class="var">&gamma;</span> = 3, and <span class="var">&rho;</span><sub>max</sub> = 1.1.</p>
+
+<table>
+  <caption>TABLE II: Expected Payoff per Optimization Round</caption>
+  <tr><th>Strategy</th><th>Reward</th><th>Rep. Change</th><th>E[Payoff]</th></tr>
+  <tr><td><span class="fn">honest</span></td><td>1.0<span class="var">R</span></td><td>+<span class="var">R</span><sub>rep</sub></td><td>1.0<span class="var">R</span></td></tr>
+  <tr><td><span class="fn">inflate</span></td><td>&asymp;0</td><td>&minus;3<span class="var">R</span><sub>rep</sub></td><td>&minus;3<span class="var">R</span></td></tr>
+  <tr><td><span class="fn">deflate</span></td><td>&le;1.1<span class="var">R</span></td><td>+<span class="var">R</span><sub>rep</sub></td><td>&le;1.1<span class="var">R</span>*</td></tr>
+  <tr><td><span class="fn">collude</span></td><td>&asymp;0</td><td>&minus;3<span class="var">R</span><sub>rep</sub></td><td>&minus;3<span class="var">R</span></td></tr>
+  <tr><td><span class="fn">free-ride</span></td><td>0</td><td>0</td><td>0</td></tr>
+</table>
+
+<p style="font-size: 8pt; text-indent: 0;">*Net payoff per unit time is lower due to reduced effective increment.</p>
+
+<!-- VI. SECURITY ANALYSIS -->
+<h2>VI. Security Analysis</h2>
+
+<p class="no-indent">We conducted a systematic threat analysis identifying 25 attack vectors organized by attack surface. Table III summarizes the 10 primary hardening measures and the attacks they mitigate.</p>
+
+<h3>A. Attack Taxonomy</h3>
+
+<p class="no-indent">The identified attacks span five categories:</p>
+
+<p><em>1) Consensus Attacks:</em> 51% attack, selfish mining, long-range rewrite, nothing-at-stake. These target the blockchain consensus layer.</p>
+
+<p><em>2) Optimization Fraud:</em> Performance inflation, gradient poisoning, overfitting to evaluation data, result fabrication. These exploit the optimization verification process.</p>
+
+<p><em>3) Identity Attacks:</em> Sybil attacks, reputation farming, identity recycling. These manipulate the identity and reputation systems.</p>
+
+<p><em>4) Network Attacks:</em> Eclipse attacks, DoS, transaction censorship, network partitioning. These target the communication layer.</p>
+
+<p><em>5) Economic Attacks:</em> Front-running, parameter theft, sandwiching, market manipulation, under-reporting. These exploit the economic incentive structure.</p>
+
+<h3>B. Hardening Measures</h3>
+
+<table>
+  <caption>TABLE III: Hardening Measures and Mitigated Attacks</caption>
+  <tr><th>Measure</th><th>Attacks Mitigated</th></tr>
+  <tr><td>Commit-reveal protocol</td><td>Front-running, parameter theft</td></tr>
+  <tr><td>Random quorum selection</td><td>Collusion, rubber-stamping</td></tr>
+  <tr><td>Asymmetric reputation</td><td>Sybil, reputation farming</td></tr>
+  <tr><td>Resource limits</td><td>DoS, OOM exhaustion</td></tr>
+  <tr><td>Finality checkpoints</td><td>Long-range rewrite</td></tr>
+  <tr><td>EMA reputation decay</td><td>Reputation farming</td></tr>
+  <tr><td>Min reputation threshold</td><td>Sybil identity flooding</td></tr>
+  <tr><td>External checkpoint anchoring</td><td>51% attack</td></tr>
+  <tr><td>Heaviest-chain fork choice</td><td>Selfish mining</td></tr>
+  <tr><td>Deterministic evaluation seeds</td><td>Hidden randomness exploit</td></tr>
+</table>
+
+<h3>C. Formal Security Properties</h3>
+
+<p class="no-indent"><strong>Theorem 3</strong> (Verification Soundness). <em>If the fraction of Byzantine evaluators</em> <span class="var">f</span> &lt; <span class="var">K</span>/(2<span class="var">M</span>), <em>then the probability of a fraudulent optimization passing verification is negligible in</em> <span class="var">K</span>.</p>
+
+<p><em>Proof sketch.</em> Each evaluator independently generates synthetic data and evaluates the submitted parameters. For a fraudulent result to pass, the median of <span class="var">K</span> evaluations must fall within tolerance <span class="var">&epsilon;</span> of the claimed performance. With at least &lceil;<span class="var">K</span>/2&rceil; honest evaluators, the median is determined by honest evaluations, which will reflect the true performance with high probability. The probability of all honest evaluators coincidentally producing results within <span class="var">&epsilon;</span> of a false claim decreases exponentially with <span class="var">K</span>. &marker;</p>
+
+<p><strong>Theorem 4</strong> (Reputation Convergence). <em>Under the EMA update rule (11) with asymmetric penalties, the expected reputation of a node playing a mixed strategy with dishonesty probability</em> <span class="var">q</span> &gt; 1/(1 + <span class="var">&gamma;</span>) <em>converges to below the minimum threshold</em> <span class="var">r</span><sub>min</sub>.</p>
+
+<p><em>Proof sketch.</em> The expected per-round reputation change is <span class="var">&delta;</span><sub>exp</sub> = (1 &minus; <span class="var">q</span>) &middot; <span class="var">R</span><sub>reward</sub> &minus; <span class="var">q</span> &middot; <span class="var">&gamma;</span> &middot; <span class="var">R</span><sub>reward</sub> = <span class="var">R</span><sub>reward</sub>(1 &minus; <span class="var">q</span>(1 + <span class="var">&gamma;</span>)). For <span class="var">&gamma;</span> = 3 and <span class="var">q</span> &gt; 0.25, <span class="var">&delta;</span><sub>exp</sub> &lt; 0, and the EMA converges to a negative fixed point, eventually falling below <span class="var">r</span><sub>min</sub>. &marker;</p>
+
+<!-- VII. IMPLEMENTATION -->
+<h2>VII. Implementation</h2>
+
+<p class="no-indent">The reference implementation of DOIN consists of five Python packages, designed with a modular plugin architecture using setuptools entry points for extensibility.</p>
+
+<h3>A. Package Architecture</h3>
+
+<p class="no-indent">The system is organized into the following packages:</p>
+
+<p><em>doin-core:</em> The blockchain data structures, consensus engine, reputation system, and task queue. This package implements the PoO consensus protocol, VUW weighting, and fork choice rule.</p>
+
+<p><em>doin-node:</em> The peer-to-peer networking layer, block propagation, and node lifecycle management. Implements the commit-reveal protocol and quorum selection.</p>
+
+<p><em>doin-optimizer:</em> Optimization engine supporting gradient-based and black-box optimization methods. Provides the interface between ML frameworks and the DOIN protocol.</p>
+
+<p><em>doin-evaluator:</em> Evaluation engine implementing synthetic data generation, model evaluation, and result aggregation. Handles the per-evaluator seed derivation from equation (9).</p>
+
+<p><em>doin-plugins:</em> Plugin registry and reference implementations for domain-specific optimization tasks, including neural architecture search, hyperparameter optimization, and reinforcement learning.</p>
+
+<h3>B. Plugin System</h3>
+
+<p class="no-indent">DOIN's extensibility is achieved through Python setuptools entry points. New optimization domains, evaluation metrics, and consensus parameters can be added without modifying core packages. Each plugin registers three entry points: a domain definition (model architecture and loss function), a synthetic data generator, and an evaluation function.</p>
+
+<h3>C. Testing</h3>
+
+<p class="no-indent">The implementation includes 291 tests across all five packages, covering unit tests for individual components, integration tests for the full optimization-verification-consensus pipeline, and property-based tests for the game-theoretic invariants (e.g., that honest strategies always yield non-negative expected payoffs).</p>
+
+<!-- VIII. CONCLUSION -->
+<h2>VIII. Conclusion and Future Work</h2>
+
+<p class="no-indent">We have presented DOIN, a decentralized network that converts blockchain consensus computation into productive machine learning optimization. The Proof of Optimization consensus mechanism, with its VUW weighting and dynamic threshold adjustment, ensures that all computational work contributing to block production is verifiable and useful. Our game-theoretic analysis demonstrates that honest optimization is a Nash equilibrium under the DOIN incentive structure, and our security analysis addresses 25 identified attack vectors with 10 hardening measures.</p>
+
+<p>Several directions for future work remain. First, the theoretical analysis could be extended to consider repeated games with discounting, providing stronger guarantees about long-term behavior. Second, the VUW weighting scheme could incorporate mechanism design principles to optimally allocate optimization effort across domains. Third, privacy-preserving techniques such as secure multi-party computation could be integrated to protect proprietary model architectures while maintaining verifiability. Fourth, large-scale empirical evaluation on real optimization workloads would validate the theoretical predictions regarding convergence and security. Finally, the integration of zero-knowledge proofs for optimization verification could reduce evaluator computational overhead while maintaining the same security guarantees.</p>
+
+<p>DOIN demonstrates that the apparent tension between blockchain security and computational utility can be resolved through careful mechanism design. By aligning consensus incentives with productive optimization work, DOIN offers a path toward decentralized AI infrastructure that is both secure and computationally efficient.</p>
+
+<!-- REFERENCES -->
+<h2>References</h2>
+
+<div class="references">
+<p><span class="ref-num">[1]</span> E. Strubell, A. Ganesh, and A. McCallum, "Energy and policy considerations for deep learning in NLP," in <em>Proc. ACL</em>, 2019, pp. 3645–3650.</p>
+<p><span class="ref-num">[2]</span> S. Nakamoto, "Bitcoin: A peer-to-peer electronic cash system," 2008. [Online]. Available: https://bitcoin.org/bitcoin.pdf</p>
+<p><span class="ref-num">[3]</span> B. McMahan, E. Moore, D. Ramage, S. Hampson, and B. A. y Arcas, "Communication-efficient learning of deep networks from decentralized data," in <em>Proc. AISTATS</em>, 2017, pp. 1273–1282.</p>
+<p><span class="ref-num">[4]</span> T. Li, A. K. Sahu, M. Zaheer, M. Sanjabi, A. Talwalkar, and V. Smith, "Federated optimization in heterogeneous networks," in <em>Proc. MLSys</em>, 2020.</p>
+<p><span class="ref-num">[5]</span> M. A. Ferrag, L. Shu, H. Djallel, and K.-K. R. Choo, "Blockchain technologies for the internet of things: Research issues and challenges," <em>IEEE Internet Things J.</em>, vol. 6, no. 2, pp. 2188–2204, 2019.</p>
+<p><span class="ref-num">[6]</span> H. Bastidas, "DInEMMo: Decentralized inference and evaluation of multi-model optimization," Universidad del Valle, Tech. Rep., 2025.</p>
+<p><span class="ref-num">[7]</span> T. McConaghy et al., "Ocean Protocol: A decentralized substrate for AI data and services," Ocean Protocol Foundation, Tech. Rep., 2020.</p>
+<p><span class="ref-num">[8]</span> S. King, "Primecoin: Cryptocurrency with prime number proof-of-work," 2013. [Online]. Available: http://primecoin.io/bin/primecoin-paper.pdf</p>
+<p><span class="ref-num">[9]</span> R. Halford, "Gridcoin: Crypto-currency using Berkeley Open Infrastructure for Network Computing as a proof of work," 2014.</p>
+<p><span class="ref-num">[10]</span> M. Ball, A. Rosen, M. Sabin, and P. N. Vasudevan, "Proofs of work from worst-case assumptions," in <em>Proc. CRYPTO</em>, 2018, pp. 789–819.</p>
+<p><span class="ref-num">[11]</span> S. Boyd, N. Parikh, E. Chu, B. Peleato, and J. Eckstein, "Distributed optimization and statistical learning via the alternating direction method of multipliers," <em>Found. Trends Mach. Learn.</em>, vol. 3, no. 1, pp. 1–122, 2011.</p>
+<p><span class="ref-num">[12]</span> W. Shi, Q. Ling, K. Yuan, G. Wu, and W. Yin, "On the linear convergence of the ADMM in decentralized consensus optimization," <em>IEEE Trans. Signal Process.</em>, vol. 62, no. 7, pp. 1750–1761, 2014.</p>
+<p><span class="ref-num">[13]</span> A. Nedic and A. Ozdaglar, "Distributed subgradient methods for multi-agent optimization," <em>IEEE Trans. Autom. Control</em>, vol. 54, no. 1, pp. 48–61, 2009.</p>
+</div>
+
+</body>
+</html>
