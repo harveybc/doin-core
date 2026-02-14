@@ -43,6 +43,23 @@ class PeerIdentity:
             raise TypeError(msg)
         return cls(private_key)
 
+    @classmethod
+    def load_or_generate(cls, path: str | Path) -> PeerIdentity:
+        """Load identity from file if it exists, otherwise generate and save.
+
+        This is the recommended way to initialize identity — ensures the
+        same peer ID persists across restarts.
+        """
+        path = Path(path)
+        if path.exists():
+            identity = cls.from_file(path)
+        else:
+            identity = cls.generate()
+            identity.save(path)
+            # Restrict permissions (owner read/write only)
+            path.chmod(0o600)
+        return identity
+
     def save(self, path: str | Path) -> None:
         """Save the private key to a PEM file."""
         path = Path(path)
