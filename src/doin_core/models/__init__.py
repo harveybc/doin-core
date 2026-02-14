@@ -1,6 +1,7 @@
 """Data models for DOIN — blocks, optimae, domains, tasks, reputation, quorum, transactions, coins."""
 
 from doin_core.models.block import Block, BlockHeader
+from doin_core.models.fee_market import FeeConfig, FeeMarket
 from doin_core.models.coin import (
     BalanceTracker,
     CoinbaseOutput,
@@ -33,6 +34,8 @@ __all__ = [
     "CoinbaseOutput",
     "CoinbaseTransaction",
     "ContributorWork",
+    "FeeConfig",
+    "FeeMarket",
     "Commitment",
     "CommitRevealManager",
     "Domain",
