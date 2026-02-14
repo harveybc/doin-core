@@ -24,13 +24,13 @@ DOIN is a decentralized system where nodes collaboratively optimize machine lear
 
 | Package | Description | Tests |
 |---------|-------------|-------|
-| [doin-core](https://github.com/harveybc/doin-core) | Consensus, models, crypto, protocol, coin, difficulty | 196 |
-| [doin-node](https://github.com/harveybc/doin-node) | Unified node: transport, chain, sync, flooding | 83 |
+| [doin-core](https://github.com/harveybc/doin-core) | Consensus, models, crypto, protocol, coin, difficulty | 278 |
+| [doin-node](https://github.com/harveybc/doin-node) | Unified node: transport, chain, sync, flooding, OLAP | 290 |
 | [doin-optimizer](https://github.com/harveybc/doin-optimizer) | Standalone optimizer runner | 5 |
 | [doin-evaluator](https://github.com/harveybc/doin-evaluator) | Standalone evaluator service | 7 |
 | [doin-plugins](https://github.com/harveybc/doin-plugins) | Domain plugins (quadratic reference + predictor ML) | 43 |
 
-**Total: 334 tests passing**
+**Total: 611+ tests passing**
 
 ## Quick Install (Linux)
 
@@ -177,6 +177,14 @@ Optimizer                    Network                      Evaluators
 9. Fork choice — heaviest chain (anti-selfish-mining)
 10. Per-evaluator deterministic seeds (anti-overfitting)
 
+## On-Chain Experiment Metrics
+
+OPTIMAE_ACCEPTED transactions carry experiment tracking metadata:
+- `experiment_id`, `round_number`, `time_to_this_result_seconds`
+- `optimization_config_hash`, `data_hash` (hashes only — no raw data on-chain)
+
+The blockchain itself becomes a distributed OLAP cube. Every node syncing the chain gets the full experiment history of all participants, enabling L3 meta-optimizer training across the entire network.
+
 ## API Endpoints
 
 | Endpoint | Method | Description |
@@ -190,6 +198,13 @@ Optimizer                    Network                      Evaluators
 | `/tasks/claim` | POST | Claim a task |
 | `/tasks/complete` | POST | Complete a task |
 | `/inference` | POST | Submit inference request |
+| `/stats` | GET | Experiment tracker stats + OLAP data |
+| `/stats/experiments` | GET | List all experiments with summaries |
+| `/stats/rounds?experiment_id=X&limit=N` | GET | Round history for an experiment |
+| `/stats/chain-metrics?domain_id=X` | GET | On-chain experiment metrics |
+| `/stats/export` | GET | Download OLAP database |
+| `/fees` | GET | Fee market stats |
+| `/peers` | GET | Peer list |
 
 ## Documentation
 
