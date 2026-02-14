@@ -18,12 +18,15 @@ from doin_core.consensus.incentives import (
     compute_reward_fraction,
     evaluate_verification_incentive,
 )
+from doin_core.consensus.difficulty import DifficultyController, DifficultyState
 from doin_core.consensus.proof_of_optimization import ProofOfOptimization
 from doin_core.consensus.weights import DomainStats, VerifiedUtilityWeights, WeightConfig
 
 __all__ = [
     "ChainScore",
     "Checkpoint",
+    "DifficultyController",
+    "DifficultyState",
     "DeterministicSeedPolicy",
     "DomainStats",
     "ExternalAnchor",

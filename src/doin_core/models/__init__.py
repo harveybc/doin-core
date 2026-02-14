@@ -1,6 +1,15 @@
-"""Data models for DON — blocks, optimae, domains, tasks, reputation, quorum, transactions."""
+"""Data models for DOIN — blocks, optimae, domains, tasks, reputation, quorum, transactions, coins."""
 
 from doin_core.models.block import Block, BlockHeader
+from doin_core.models.coin import (
+    BalanceTracker,
+    CoinbaseOutput,
+    CoinbaseTransaction,
+    ContributorWork,
+    TransferTransaction,
+    compute_block_reward,
+    distribute_block_reward,
+)
 from doin_core.models.commit_reveal import (
     Commitment,
     CommitRevealManager,
@@ -17,9 +26,13 @@ from doin_core.models.task import Task, TaskQueue, TaskStatus, TaskType
 from doin_core.models.transaction import Transaction, TransactionType
 
 __all__ = [
+    "BalanceTracker",
     "Block",
     "BlockHeader",
     "BoundsValidator",
+    "CoinbaseOutput",
+    "CoinbaseTransaction",
+    "ContributorWork",
     "Commitment",
     "CommitRevealManager",
     "Domain",
@@ -39,6 +52,9 @@ __all__ = [
     "TaskType",
     "Transaction",
     "TransactionType",
+    "TransferTransaction",
+    "compute_block_reward",
     "compute_commitment",
+    "distribute_block_reward",
     "verify_commitment",
 ]
