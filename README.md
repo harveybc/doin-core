@@ -30,7 +30,7 @@ DOIN is a decentralized system where nodes collaboratively optimize machine lear
 | [doin-evaluator](https://github.com/harveybc/doin-evaluator) | Standalone evaluator service | 7 |
 | [doin-plugins](https://github.com/harveybc/doin-plugins) | Domain plugins (quadratic reference + predictor ML) | 43 |
 
-**Total: 611+ tests passing**
+**Total: 623 tests passing**
 
 ## Quick Install (Linux)
 
@@ -250,6 +250,25 @@ my_domain = "my_package:MyInferencer"
 [project.entry-points."doin.synthetic_data"]
 my_domain = "my_package:MySyntheticData"
 ```
+
+## Benchmarks
+
+Real multi-node results on consumer hardware (LAN, no cloud):
+
+### Easy Target (−100.0, quadratic domain)
+| Setup | Rounds | Speedup |
+|-------|--------|---------|
+| Single node | 39 | 1× |
+| Dragon (RTX 4090) + Omega (RTX 4070) | 5–6 | **~7×** |
+
+### Hard Target (−50.0, quadratic domain)
+| Setup | Rounds | Time |
+|-------|--------|------|
+| Omega solo | 95 | 1592s |
+| Dragon solo | 100 | 1681s |
+| Combined | 78 (Omega) | 1292s — **19% faster** |
+
+Speedup comes from champion migration: when one node finds a better solution, it shares parameters on-chain and other nodes adopt them (island model). A simple random-step optimizer was used — real GA/NEAT with crossover would benefit significantly more.
 
 ## Contributing
 
