@@ -11,12 +11,12 @@ DOIN is a decentralized system where nodes collaboratively optimize machine lear
 │   doin-core  │     │  doin-node   │     │ doin-plugins │
 │              │     │              │     │              │
 │ • Consensus  │◄────│ • Transport  │────►│ • Quadratic  │
-│ • Models     │     │ • Chain      │     │ • Predictor  │
-│ • Crypto     │     │ • Sync       │     │ • (custom)   │
-│ • Protocol   │     │ • Flooding   │     │              │
-│ • Plugins    │     │ • Unified    │     │              │
-│ • Coin       │     │   Node       │     │              │
-│ • Difficulty  │     │              │     │              │
+│ • Models     │     │ • GossipSub  │     │ • Predictor  │
+│ • Crypto     │     │ • Chain      │     │   (DEAP GA)  │
+│ • Protocol   │     │ • Sync       │     │ • (custom)   │
+│ • Plugins    │     │ • Dashboard  │     │              │
+│ • Coin       │     │ • Island     │     │              │
+│ • Difficulty  │     │   Migration  │     │              │
 └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
@@ -25,12 +25,12 @@ DOIN is a decentralized system where nodes collaboratively optimize machine lear
 | Package | Description | Tests |
 |---------|-------------|-------|
 | [doin-core](https://github.com/harveybc/doin-core) | Consensus, models, crypto, protocol, coin, difficulty | 278 |
-| [doin-node](https://github.com/harveybc/doin-node) | Unified node: transport, chain, sync, flooding, OLAP | 290 |
+| [doin-node](https://github.com/harveybc/doin-node) | Unified node: transport, GossipSub, chain, sync, dashboard, OLAP | 289 |
 | [doin-optimizer](https://github.com/harveybc/doin-optimizer) | Standalone optimizer runner | 5 |
 | [doin-evaluator](https://github.com/harveybc/doin-evaluator) | Standalone evaluator service | 7 |
-| [doin-plugins](https://github.com/harveybc/doin-plugins) | Domain plugins (quadratic reference + predictor ML) | 43 |
+| [doin-plugins](https://github.com/harveybc/doin-plugins) | Domain plugins (quadratic reference + predictor DEAP GA) | 33 |
 
-**Total: 623 tests passing**
+**Total: 612 tests passing**
 
 ## Quick Install (Linux)
 
@@ -255,6 +255,8 @@ my_domain = "my_package:MySyntheticData"
 
 Real multi-node results on consumer hardware (LAN, no cloud):
 
+### 3-Node Benchmark (Dragon RTX 4090 + Omega RTX 4070 + Delta CPU-only SLI 2× GFX 550M)
+
 ### Easy Target (−100.0, quadratic domain)
 | Setup | Rounds | Speedup |
 |-------|--------|---------|
@@ -264,11 +266,16 @@ Real multi-node results on consumer hardware (LAN, no cloud):
 ### Hard Target (−50.0, quadratic domain)
 | Setup | Rounds | Time |
 |-------|--------|------|
-| Omega solo | 95 | 1592s |
-| Dragon solo | 100 | 1681s |
-| Combined | 78 (Omega) | 1292s — **19% faster** |
+| Omega solo (RTX 4070) | 95 | 1592s |
+| Dragon solo (RTX 4090) | 100 | 1681s |
+| Delta solo (CPU, SLI 2× GFX 550M) | — | −124.01 at 1680s (not converged) |
+| Dragon + Omega combined | 78 | 1292s — **19% faster** |
 
-Speedup comes from champion migration: when one node finds a better solution, it shares parameters on-chain and other nodes adopt them (island model). A simple random-step optimizer was used — real GA/NEAT with crossover would benefit significantly more.
+### Island Model Migration
+
+Speedup comes from **champion migration**: when one node finds a better solution, it broadcasts parameters via on-chain optimae. Other nodes inject these champions into their populations — the classic **island model** from evolutionary computation, implemented over a real blockchain. Delta (CPU-only, 3–4× slower) benefits most from receiving champions it couldn't find alone.
+
+A simple random-step optimizer was used for these benchmarks. With full DEAP GA crossover and mutation, multi-node speedups will be significantly higher — the island model architecture is specifically designed for evolutionary algorithms where champion injection creates new genetic material for crossover.
 
 ## Contributing
 
