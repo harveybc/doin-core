@@ -177,6 +177,18 @@ Optimizer                    Network                      Evaluators
 9. Fork choice — heaviest chain (anti-selfish-mining)
 10. Per-evaluator deterministic seeds (anti-overfitting)
 
+## Three-Level Patience System
+
+DOIN's optimization pipeline has three distinct patience/stopping levels:
+
+| Level | Name | Config Key | What It Controls | Default |
+|-------|------|------------|-----------------|---------|
+| **L1** | Candidate Training | `early_patience` | Keras `model.fit()` early stopping — epochs without val_loss improvement before stopping ONE candidate | 80–100 |
+| **L2** | Stage Progression | `optimization_patience` | DEAP GA — generations without best-fitness improvement before advancing to the next incremental stage | 8–10 |
+| **L3** | Meta-Optimizer | *(not yet implemented)* | Network-level performance predictor trained on (params→performance) from many L2 experiments via OLAP data | — |
+
+**L1** is internal to each candidate's training loop. **L2** controls when the genetic algorithm gives up on a stage and moves to the next. **L3** will eventually use the on-chain OLAP data from all network participants to predict which hyperparameter regions are worth exploring.
+
 ## On-Chain Experiment Metrics
 
 OPTIMAE_ACCEPTED transactions carry experiment tracking metadata:
