@@ -41,6 +41,10 @@ class MessageType(str, Enum):
     # Network
     PEER_DISCOVERY = "peer_discovery"
 
+    # Champion sync (island model — request best on startup)
+    CHAMPION_REQUEST = "champion_request"
+    CHAMPION_RESPONSE = "champion_response"
+
     # Legacy
     EVALUATION_REQUEST = "evaluation_request"
     EVALUATION_RESPONSE = "evaluation_response"
@@ -190,6 +194,23 @@ class BlockResponse(BaseModel):
     request_id: str = ""
     blocks: list[dict[str, Any]] = Field(default_factory=list)
     has_more: bool = False
+
+
+class ChampionRequest(BaseModel):
+    """Request current best champion for a domain from peers."""
+
+    domain_id: str
+    request_id: str = ""
+
+
+class ChampionResponse(BaseModel):
+    """Response with current best champion for a domain."""
+
+    domain_id: str
+    request_id: str = ""
+    parameters: dict[str, Any] | None = None
+    performance: float | None = None
+    has_champion: bool = False
 
 
 class PeerDiscovery(BaseModel):
