@@ -45,6 +45,9 @@ class MessageType(str, Enum):
     CHAMPION_REQUEST = "champion_request"
     CHAMPION_RESPONSE = "champion_response"
 
+    # Stage synchronisation (island model — all nodes advance stages together)
+    STAGE_COMPLETE = "stage_complete"
+
     # Legacy
     EVALUATION_REQUEST = "evaluation_request"
     EVALUATION_RESPONSE = "evaluation_response"
