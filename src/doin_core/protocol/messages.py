@@ -87,6 +87,7 @@ class OptimaeReveal(BaseModel):
     parameters: dict[str, Any]
     reported_performance: float
     nonce: str
+    champion_metrics: dict[str, Any] | None = None  # MAE breakdowns from originator
 
 
 class OptimaeAnnouncement(BaseModel):
