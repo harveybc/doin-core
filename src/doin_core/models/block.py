@@ -82,10 +82,15 @@ class Block(BaseModel):
 
     @staticmethod
     def genesis(generator_id: str = "genesis") -> Block:
-        """Create the genesis block."""
+        """Create the genesis block.
+
+        Uses a fixed timestamp (Unix epoch) so every node produces an
+        identical genesis block with the same hash.
+        """
         header = BlockHeader(
             index=0,
             previous_hash="0" * 64,
+            timestamp=datetime(1970, 1, 1, tzinfo=timezone.utc),
             merkle_root="0" * 64,
             generator_id=generator_id,
             weighted_performance_sum=0.0,
