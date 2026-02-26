@@ -112,14 +112,15 @@ class VerifiedUtilityWeights:
         weights: dict[str, float] = {}
 
         for domain_id, stats in self._stats.items():
-            # Verification strength — mandatory synthetic data for trust
-            if not stats.has_synthetic_data:
-                # Domain without synthetic data: optimae contribute NOTHING
-                # to block threshold. Still tracked but zero consensus influence.
-                weights[domain_id] = 0.0
-                continue
-
-            verification_strength = 1.0
+            # Verification strength — synthetic data gives higher trust
+            if stats.has_synthetic_data:
+                verification_strength = 1.0
+            else:
+                # Without synthetic data validation we still allow block
+                # generation, but with reduced verification trust.  A weight
+                # of zero would prevent ANY blocks from ever being created
+                # (chicken-and-egg).
+                verification_strength = 0.5
 
             # Demand factor — proportion of total inference demand
             if total_inference > 0:

@@ -4,15 +4,15 @@ from doin_core.consensus.weights import VerifiedUtilityWeights, WeightConfig
 
 
 class TestVerifiedUtilityWeights:
-    def test_domain_without_synthetic_gets_zero(self):
-        """Domains without synthetic data plugin get zero weight."""
+    def test_domain_without_synthetic_gets_reduced_weight(self):
+        """Domains without synthetic data get reduced (0.5x) weight, not zero."""
         vuw = VerifiedUtilityWeights()
         vuw.register_domain("no-synth", base_weight=1.0, has_synthetic_data=False)
         vuw.register_domain("has-synth", base_weight=1.0, has_synthetic_data=True)
 
         weights = vuw.compute_weights()
-        assert weights["no-synth"] == 0.0
-        assert weights["has-synth"] > 0.0
+        assert weights["no-synth"] > 0.0
+        assert weights["has-synth"] > weights["no-synth"]
 
     def test_demand_increases_weight(self):
         vuw = VerifiedUtilityWeights()
@@ -49,12 +49,15 @@ class TestVerifiedUtilityWeights:
         weights = vuw.compute_weights()
         assert weights["improving"] > weights["stagnant"]
 
-    def test_effective_increment_zero_for_no_synthetic(self):
+    def test_effective_increment_reduced_for_no_synthetic(self):
         vuw = VerifiedUtilityWeights()
         vuw.register_domain("no-synth", base_weight=1.0, has_synthetic_data=False)
+        vuw.register_domain("has-synth", base_weight=1.0, has_synthetic_data=True)
 
-        eff = vuw.get_effective_increment("no-synth", 1.0, 5.0)
-        assert eff == 0.0
+        eff_no = vuw.get_effective_increment("no-synth", 1.0, 5.0)
+        eff_yes = vuw.get_effective_increment("has-synth", 1.0, 5.0)
+        assert eff_no > 0.0
+        assert eff_yes > eff_no
 
     def test_effective_increment_scales_with_reputation(self):
         vuw = VerifiedUtilityWeights()
