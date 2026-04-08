@@ -36,6 +36,9 @@ class TransactionType(str, Enum):
     DOMAIN_REGISTERED = "domain_registered"
     DOMAIN_UPDATED = "domain_updated"
 
+    # Per-candidate evaluation results (all candidates, not just champions)
+    CANDIDATE_EVALUATED = "candidate_evaluated"
+
 
 class Transaction(BaseModel):
     """A single event logged on the DON blockchain.

@@ -48,6 +48,9 @@ class MessageType(str, Enum):
     # Stage synchronisation (island model — all nodes advance stages together)
     STAGE_COMPLETE = "stage_complete"
 
+    # Per-candidate evaluation broadcast (research mode — accepted without verification)
+    CANDIDATE_EVALUATION = "candidate_evaluation"
+
     # Legacy
     EVALUATION_REQUEST = "evaluation_request"
     EVALUATION_RESPONSE = "evaluation_response"
