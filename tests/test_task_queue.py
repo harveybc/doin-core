@@ -1,6 +1,7 @@
 """Tests for the Task model and TaskQueue."""
 
 from doin_core.models.task import Task, TaskQueue, TaskStatus, TaskType
+from doin_core.protocol.messages import TaskCreated
 
 
 class TestTask:
@@ -164,3 +165,35 @@ class TestTaskQueue:
         ))
         tasks = q.get_pending()
         assert tasks[0].task_type == TaskType.OPTIMAE_VERIFICATION
+
+
+def test_metric_evidence_survives_task_created_round_trip():
+    task = Task(
+        task_type=TaskType.OPTIMAE_VERIFICATION,
+        domain_id="trading-solusdt-4h",
+        requester_id="optimizer-a",
+        parameters={"learning_rate": 0.001},
+        reported_performance=0.12,
+        metric_evidence={"rap": 0.12, "mean_weekly_return": 0.2},
+    )
+
+    message = TaskCreated(
+        task_id=task.id,
+        task_type=task.task_type.value,
+        domain_id=task.domain_id,
+        requester_id=task.requester_id,
+        parameters=task.parameters,
+        reported_performance=task.reported_performance,
+        metric_evidence=task.metric_evidence,
+    )
+    restored = Task(
+        id=message.task_id,
+        task_type=TaskType(message.task_type),
+        domain_id=message.domain_id,
+        requester_id=message.requester_id,
+        parameters=message.parameters,
+        reported_performance=message.reported_performance,
+        metric_evidence=message.metric_evidence,
+    )
+
+    assert restored.metric_evidence == task.metric_evidence

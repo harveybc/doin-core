@@ -152,6 +152,7 @@ class TaskCreated(BaseModel):
     parameters: dict[str, Any] = Field(default_factory=dict)
     optimae_id: str | None = None
     reported_performance: float | None = None
+    metric_evidence: dict[str, Any] = Field(default_factory=dict)
     priority: int = 10
 
 

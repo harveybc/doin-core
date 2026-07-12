@@ -61,6 +61,10 @@ class Task(BaseModel):
     # For OPTIMAE_VERIFICATION
     optimae_id: str | None = Field(default=None, description="ID of the optimae being verified")
     reported_performance: float | None = Field(default=None, description="Optimizer's claimed performance")
+    metric_evidence: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Public metric vector supporting the reported performance.",
+    )
 
     # Result (filled when completed)
     result: dict[str, Any] | None = Field(default=None, description="Evaluation result")
