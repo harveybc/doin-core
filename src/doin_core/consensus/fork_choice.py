@@ -32,7 +32,12 @@ class ChainScore:
     is_checkpoint_consistent: bool = True
 
     def __lt__(self, other: ChainScore) -> bool:
-        """Less-than for sorting (higher is better)."""
+        """Order scores so ``max``/descending sort returns the preferred chain.
+
+        The final comparison is intentionally inverted: a lexicographically
+        lower tip hash is the stronger deterministic tiebreak, so the object
+        carrying that lower hash must compare as greater.
+        """
         if self.is_checkpoint_consistent != other.is_checkpoint_consistent:
             return not self.is_checkpoint_consistent  # Consistent > inconsistent
 
@@ -42,7 +47,7 @@ class ChainScore:
         if self.optimae_accepted_count != other.optimae_accepted_count:
             return self.optimae_accepted_count < other.optimae_accepted_count
 
-        # Deterministic tiebreak: lower hash wins
+        # Inverted because select_best() uses descending order.
         return self.tip_hash > other.tip_hash
 
 

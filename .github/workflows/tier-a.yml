@@ -1,0 +1,31 @@
+name: Tier A
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  consensus-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
+      - name: Record dependency identity
+        run: sha256sum pyproject.toml requirements-ci.txt
+      - name: Install hash-locked dependencies
+        run: |
+          python -m pip install --require-hashes -r requirements-ci.txt
+          python -m pip install --no-deps -e .
+      - name: Compile package
+        run: python -m compileall -q src
+      - name: Run consensus contracts
+        run: pytest -q

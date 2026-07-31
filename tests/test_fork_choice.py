@@ -54,6 +54,28 @@ class TestForkChoiceRule:
         best = fcr.select_best()
         assert best.tip_hash == "strong"
 
+    def test_select_best_uses_lower_hash_for_an_exact_score_tie(self):
+        fcr = ForkChoiceRule()
+        tied_blocks = [
+            {
+                "height": 1,
+                "hash": "shared",
+                "transactions": [
+                    {
+                        "tx_type": "optimae_accepted",
+                        "payload": {"effective_increment": 1.0},
+                    }
+                ],
+            }
+        ]
+        fcr.score_chain("fff", 1, tied_blocks)
+        fcr.score_chain("000", 1, tied_blocks)
+
+        best = fcr.select_best()
+
+        assert best is not None
+        assert best.tip_hash == "000"
+
     def test_checkpoint_inconsistent_fork_loses(self):
         fcr = ForkChoiceRule()
         fcr.score_chain("inconsistent", 10, [

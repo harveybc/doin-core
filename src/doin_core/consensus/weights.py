@@ -8,8 +8,8 @@ weight(domain) = base_weight × demand_factor × (1 + progress_factor) × verifi
 Where:
 - demand_factor: proportion of served inference tasks (from chain)
 - progress_factor: recent performance improvements relative to history
-- verification_strength: 1.0 if synthetic data plugin, 0.0 if not
-  (public test data is gameable — only synthetic verification is trustworthy)
+- verification_strength: 1.0 with synthetic verification, 0.5 without it
+  (unverified domains remain usable but contribute at reduced trust)
 """
 
 from __future__ import annotations
