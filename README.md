@@ -1,306 +1,191 @@
-# DOIN — Decentralized Optimization and Inference Network
+# doin-core
 
-> **Proof of Optimization**: Block generation triggered by verified ML improvements, not wasted hash computations.
+**Status: ACTIVE — core library of the DOIN family.**
 
-DOIN is a decentralized system where nodes collaboratively optimize machine learning models using blockchain consensus. Instead of proof-of-work, blocks are generated when the weighted sum of verified optimization improvements exceeds a dynamic threshold — making every unit of compute count toward real progress.
+`doin-core` is the shared protocol library of DOIN, the Decentralized
+Optimization and Inference Network (older code docstrings abbreviate it
+**DON**). It defines the primitives every DOIN participant agrees on:
+proof-of-optimization consensus rules, block/transaction/optimae data models,
+the wire message schema, cryptographic peer identity, and the plugin abstract
+base classes plus the setuptools entry-point groups through which domain
+plugins are discovered. It contains no runtime: nodes, networking loops,
+storage, and analytics live in
+[doin-node](https://github.com/harveybc/doin-node).
+
+## Role and non-responsibilities
+
+**Role:** the single source of truth for protocol data structures and
+consensus logic shared by all DOIN packages.
+
+**Not in this repository:**
+
+- No participant runtime, event loops, HTTP transport, or storage backends —
+  that is [doin-node](https://github.com/harveybc/doin-node), the unified
+  participant runtime.
+- No OLAP / analytics schema. The OLAP-on-blockchain code (star schema,
+  experiment tracker, chain metrics) lives in `doin-node` under its
+  `src/doin_node/stats/` package, not here.
+- No plugin implementations — reference and production plugins live in
+  [doin-plugins](https://github.com/harveybc/doin-plugins); this repository
+  only defines the abstract interfaces and entry-point groups.
+- No domain models or optimizers. Domain optimizers remain external
+  installable packages that must work locally without DOIN and implement the
+  plugin interfaces defined here.
 
 ## Architecture
 
-```
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│   doin-core  │     │  doin-node   │     │ doin-plugins │
-│              │     │              │     │              │
-│ • Consensus  │◄────│ • Transport  │────►│ • Quadratic  │
-│ • Models     │     │ • GossipSub  │     │ • Predictor  │
-│ • Crypto     │     │ • Chain      │     │   (DEAP GA)  │
-│ • Protocol   │     │ • Sync       │     │ • (custom)   │
-│ • Plugins    │     │ • Dashboard  │     │              │
-│ • Coin       │     │ • Island     │     │              │
-│ • Difficulty  │     │   Migration  │     │              │
-└──────────────┘     └──────────────┘     └──────────────┘
-```
+| Package | Contents |
+|---|---|
+| [`doin_core.consensus`](src/doin_core/consensus) | Proof-of-optimization, fork choice, finality checkpoints and external anchoring, difficulty, evaluation weights, incentives, dynamic quorum, deterministic seed derivation |
+| [`doin_core.models`](src/doin_core/models) | `Block`/`BlockHeader`, `Transaction` (optimae, task, evaluation, domain and candidate transaction types), `Optimae`, `Domain`, `Task`, quorum, commit-reveal, reputation, coin, payment channel, fee market, resource limits |
+| [`doin_core.protocol`](src/doin_core/protocol) | `MessageType` enum and pydantic payload models for the wire protocol |
+| [`doin_core.crypto`](src/doin_core/crypto) | `PeerIdentity` (elliptic-curve keys, signing/verification, peer IDs) and hashing helpers |
+| [`doin_core.plugins`](src/doin_core/plugins) | Plugin ABCs and the entry-point loader (see below) |
 
-**5 packages:**
+Consumers: `doin-node` (runtime), `doin-plugins` (implementations), and the
+retired `doin-optimizer` / `doin-evaluator` clients (historical only).
 
-| Package | Description | Tests |
-|---------|-------------|-------|
-| [doin-core](https://github.com/harveybc/doin-core) | Consensus, models, crypto, protocol, coin, difficulty | 278 |
-| [doin-node](https://github.com/harveybc/doin-node) | Unified node: transport, GossipSub, chain, sync, dashboard, OLAP | 289 |
-| [doin-optimizer](https://github.com/harveybc/doin-optimizer) | Standalone optimizer runner | 5 |
-| [doin-evaluator](https://github.com/harveybc/doin-evaluator) | Standalone evaluator service | 7 |
-| [doin-plugins](https://github.com/harveybc/doin-plugins) | Domain plugins (quadratic reference + predictor DEAP GA) | 33 |
+## Requirements
 
-**Total: 612 tests passing**
+From [`pyproject.toml`](pyproject.toml):
 
-## Quick Install (Linux)
+- Python `>=3.10`
+- `pydantic>=2.0`, `cryptography>=41.0`
+- Dev extras: `pytest`, `pytest-cov`, `pytest-asyncio`, `mypy`, `ruff`
 
-### One-Line Install
-```bash
-curl -sSL https://raw.githubusercontent.com/harveybc/doin-core/master/scripts/install.sh | bash
-```
-
-### Manual Install
-```bash
-# Prerequisites: Python 3.10+, pip, git
-sudo apt update && sudo apt install -y python3 python3-pip python3-venv git
-
-# Create virtual environment (recommended)
-python3 -m venv ~/doin-venv && source ~/doin-venv/bin/activate
-
-# Install packages (order matters — core first)
-pip install git+https://github.com/harveybc/doin-core.git
-pip install git+https://github.com/harveybc/doin-node.git
-pip install git+https://github.com/harveybc/doin-optimizer.git
-pip install git+https://github.com/harveybc/doin-evaluator.git
-pip install git+https://github.com/harveybc/doin-plugins.git
-```
-
-### Developer Install (editable)
-```bash
-mkdir ~/doin && cd ~/doin
-
-# Clone all repos
-for pkg in doin-core doin-node doin-optimizer doin-evaluator doin-plugins; do
-  git clone https://github.com/harveybc/$pkg.git
-done
-
-# Install in editable mode
-pip install -e doin-core
-pip install -e doin-node
-pip install -e doin-optimizer
-pip install -e doin-evaluator
-pip install -e doin-plugins
-
-# Install dev dependencies
-pip install pytest pytest-asyncio pytest-cov
-
-# Run all tests
-for pkg in doin-core doin-node doin-optimizer doin-evaluator doin-plugins; do
-  echo "=== $pkg ===" && cd $pkg && python -m pytest tests/ -q && cd ..
-done
-```
-
-## Run a Node
-
-### Single Node (Quadratic Domain — No ML Frameworks Needed)
+## Installation
 
 ```bash
-cat > config.json << 'EOF'
-{
-  "host": "0.0.0.0",
-  "port": 8470,
-  "data_dir": "./doin-data",
-  "bootstrap_peers": [],
-  "domains": [{
-    "domain_id": "quadratic",
-    "optimize": true,
-    "evaluate": true,
-    "has_synthetic_data": true
-  }]
-}
-EOF
-
-doin-node --config config.json
+git clone https://github.com/harveybc/doin-core.git
+cd doin-core
+pip install -e .          # add [dev] for the test toolchain
 ```
 
-### Multi-Node Testnet (localhost)
+Verified 2026-08-10 in the maintainer's Python 3.12 environment:
+`python -c "import doin_core; print(doin_core.__version__)"` prints `0.1.0`.
+There is no PyPI release; install from source.
 
-```bash
-# Launch 3 nodes automatically
-./scripts/deploy-testnet.sh 3
+## Smallest working example
 
-# Or 5 nodes with clean data
-./scripts/deploy-testnet.sh 5 --clean
-```
-
-### Deploy to Remote Machine
-
-```bash
-# Deploy evaluator node to a remote server
-./scripts/deploy-remote.sh user@server --port 8470 --peers seed1.doin.net:8470,seed2.doin.net:8470
-
-# Deploy optimizer node
-./scripts/deploy-remote.sh user@gpu-server --optimize --port 8470 --peers seed1.doin.net:8470
-```
-
-### Check Node Status
-
-```bash
-curl http://localhost:8470/status | python3 -m json.tool
-curl http://localhost:8470/chain/status
-```
-
-## How It Works
-
-### Optimae Lifecycle
-```
-Optimizer                    Network                      Evaluators
-    │                           │                             │
-    │ 1. Optimize ML model      │                             │
-    │ 2. Commit hash(params)  ──►│ Flood to all nodes         │
-    │                           │                             │
-    │ 3. Reveal params + nonce──►│ Verify hash matches        │
-    │                           │                             │
-    │                           │ 4. Select random quorum  ──►│
-    │                           │                             │
-    │                           │    5. Generate synthetic ──►│ (different per evaluator)
-    │                           │    6. Evaluate model     ──►│
-    │                           │    7. Vote on performance──►│
-    │                           │                             │
-    │                           │ 8. Quorum decides           │
-    │                           │ 9. Distribute coin reward   │
-    │                           │ 10. Update reputation       │
-    │◄── Coins + reputation ────│                             │
-    │                           │◄── Coins + reputation ──────│
-```
-
-### DOIN Coin Economics
-- **Block reward**: 50 DOIN (halves every 210,000 blocks)
-- **Max supply**: 21,000,000 DOIN
-- **Distribution**: 65% optimizers, 30% evaluators, 5% block generator
-- **Proportional to work**: optimizer share scaled by `effective_increment × reward_fraction`
-
-### Difficulty Adjustment (Bitcoin/Ethereum Hybrid)
-- **Epoch-based** (every 100 blocks): Major correction, clamped to 4× max change
-- **Per-block EMA** (α=0.1): Smooth inter-epoch corrections, ±2% max per block
-- **Target**: 10-minute block time (configurable)
-
-### Security (10 Hardening Measures)
-1. Commit-reveal (anti-front-running)
-2. Random quorum selection (anti-collusion)
-3. Asymmetric reputation penalties (3× penalty vs 1× reward)
-4. Resource limits + bounds validation (anti-DoS)
-5. Finality checkpoints (anti-rewrite)
-6. Reputation decay — EMA (anti-farming)
-7. Min reputation threshold (anti-sybil)
-8. External checkpoint anchoring (51% defense)
-9. Fork choice — heaviest chain (anti-selfish-mining)
-10. Per-evaluator deterministic seeds (anti-overfitting)
-
-## Three-Level Patience System
-
-DOIN's optimization pipeline has three distinct patience/stopping levels:
-
-| Level | Name | Config Key | What It Controls | Default |
-|-------|------|------------|-----------------|---------|
-| **L1** | Candidate Training | `early_patience` | Keras `model.fit()` early stopping — epochs without val_loss improvement before stopping ONE candidate | 80–100 |
-| **L2** | Stage Progression | `optimization_patience` | DEAP GA — generations without best-fitness improvement before advancing to the next incremental stage | 8–10 |
-| **L3** | Meta-Optimizer | *(not yet implemented)* | Network-level performance predictor trained on (params→performance) from many L2 experiments via OLAP data | — |
-
-**L1** is internal to each candidate's training loop. **L2** controls when the genetic algorithm gives up on a stage and moves to the next. **L3** will eventually use the on-chain OLAP data from all network participants to predict which hyperparameter regions are worth exploring.
-
-## On-Chain Experiment Metrics
-
-OPTIMAE_ACCEPTED transactions carry experiment tracking metadata:
-- `experiment_id`, `round_number`, `time_to_this_result_seconds`
-- `optimization_config_hash`, `data_hash` (hashes only — no raw data on-chain)
-
-The blockchain itself becomes a distributed OLAP cube. Every node syncing the chain gets the full experiment history of all participants, enabling L3 meta-optimizer training across the entire network.
-
-## API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check |
-| `/status` | GET | Full node status (chain, peers, tasks, security, coin, difficulty) |
-| `/chain/status` | GET | Chain height, tip hash, finalized height |
-| `/chain/blocks?from=X&to=Y` | GET | Fetch blocks by range (max 50) |
-| `/chain/block/{index}` | GET | Fetch single block |
-| `/tasks/pending` | GET | List pending tasks |
-| `/tasks/claim` | POST | Claim a task |
-| `/tasks/complete` | POST | Complete a task |
-| `/inference` | POST | Submit inference request |
-| `/stats` | GET | Experiment tracker stats + OLAP data |
-| `/stats/experiments` | GET | List all experiments with summaries |
-| `/stats/rounds?experiment_id=X&limit=N` | GET | Round history for an experiment |
-| `/stats/chain-metrics?domain_id=X` | GET | On-chain experiment metrics |
-| `/stats/export` | GET | Download OLAP database |
-| `/fees` | GET | Fee market stats |
-| `/peers` | GET | Peer list |
-
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [NETWORK.md](docs/NETWORK.md) | Network architecture & protocol |
-| [SECURITY.md](docs/SECURITY.md) | 25 attack vectors & defenses |
-| [SCALABILITY.md](docs/SCALABILITY.md) | Scalability analysis & roadmap |
-| [INSTALL.md](docs/INSTALL.md) | Detailed installation guide |
-| [doin-paper.pdf](docs/doin-paper.pdf) | IEEE-style academic paper |
-
-## Plugin System
-
-Create custom domains by implementing three plugin interfaces:
+The snippet below exercises identity, deterministic seeds, synthetic-data
+hashing, and block construction. Executed successfully on 2026-08-10:
 
 ```python
-from doin_core.plugins.base import OptimizationPlugin, InferencePlugin, SyntheticDataPlugin
+from doin_core.consensus.deterministic_seed import derive_seed, verify_seed
+from doin_core.crypto.identity import PeerIdentity
+from doin_core.models.block import Block, BlockHeader
+from doin_core.plugins.base import hash_synthetic_data
 
-class MyOptimizer(OptimizationPlugin):
-    def optimize(self, current_best_params, current_best_performance):
-        # Your ML training logic here
-        return new_params, new_performance
+# 1. Node identity: generate, sign, verify
+identity = PeerIdentity.generate()
+payload = b"optimae payload"
+signature = identity.sign(payload)
+assert identity.verify(signature, payload)
 
-class MyInferencer(InferencePlugin):
-    def evaluate(self, parameters, data=None):
-        # Evaluate the model
-        return performance_score
+# 2. Deterministic evaluation seed derived from a commitment hash
+commitment = "ab" * 32
+seed = derive_seed(commitment, domain_id="quadratic")
+assert verify_seed(commitment, "quadratic", seed)
 
-class MySyntheticData(SyntheticDataPlugin):
-    def generate(self, seed=None):
-        # Generate synthetic test data
-        return {"data": [...], "labels": [...]}
+# 3. Consensus hash of synthetic evaluation data
+digest = hash_synthetic_data({"x": [1.0, 2.0, 3.0]})
+
+# 4. Build a block (hash computed automatically)
+header = BlockHeader(
+    index=0,
+    previous_hash="0" * 64,
+    merkle_root="0" * 64,
+    generator_id=identity.peer_id,
+    weighted_performance_sum=0.0,
+    threshold=1.0,
+)
+block = Block(header=header)
+print(identity.peer_id[:16], seed, digest[:16], block.hash[:16])
 ```
 
-Register via `pyproject.toml` entry points:
-```toml
-[project.entry-points."doin.optimization"]
-my_domain = "my_package:MyOptimizer"
+Note: `hash_synthetic_data` requires `numpy`, which is a dependency of
+`doin-plugins` rather than of this package; the rest of the library needs only
+`pydantic` and `cryptography`.
 
-[project.entry-points."doin.inference"]
-my_domain = "my_package:MyInferencer"
+## Plugin interface and entry-point groups
 
-[project.entry-points."doin.synthetic_data"]
-my_domain = "my_package:MySyntheticData"
+[`src/doin_core/plugins/base.py`](src/doin_core/plugins/base.py) defines the
+three ABCs:
+
+- `OptimizationPlugin` — `configure()`, `optimize(current_best_params,
+  current_best_performance)`, `get_domain_metadata()`
+- `InferencePlugin` — `configure()`, `evaluate(parameters, data)`
+- `SyntheticDataPlugin` — `configure()`, deterministic `generate(seed)` and
+  `generate_with_hash(seed)`; synthetic data is mandatory for verification
+  trust (domains without it get zero consensus weight)
+
+[`src/doin_core/plugins/loader.py`](src/doin_core/plugins/loader.py) discovers
+implementations through these setuptools entry-point groups:
+
+| Group | Loader function |
+|---|---|
+| `doin.optimization` | `load_optimization_plugin(name)` |
+| `doin.inference` | `load_inference_plugin(name)` |
+| `doin.synthetic_data` | `load_synthetic_data_plugin(name)` |
+
+Any external package can register plugins in these groups;
+[doin-plugins](https://github.com/harveybc/doin-plugins) provides the
+reference and production implementations consumed by
+[doin-node](https://github.com/harveybc/doin-node).
+
+## Tests
+
+```bash
+pip install -e .[dev]
+pytest -q
 ```
 
-## Benchmarks
+Observed 2026-08-10: `pytest -q --collect-only | tail -1` reports
+**280 tests collected** across 20 test files in [`tests/`](tests).
+(Collection count only; run `pytest -q` for a full pass.)
 
-Real multi-node results on consumer hardware (LAN, no cloud):
+## Artifacts and outputs
 
-### 3-Node Benchmark (Dragon RTX 4090 + Omega RTX 4070 + Delta CPU-only SLI 2× GFX 550M)
+This is a pure library: it writes nothing on import. `PeerIdentity.save()` /
+`load_or_generate()` persist private key material to a caller-chosen path —
+treat those files as secrets (see below).
 
-### Easy Target (−100.0, quadratic domain)
-| Setup | Rounds | Speedup |
-|-------|--------|---------|
-| Single node | 39 | 1× |
-| Dragon (RTX 4090) + Omega (RTX 4070) | 5–6 | **~7×** |
+## Security notes
 
-### Hard Target (−50.0, quadratic domain)
-| Setup | Rounds | Time |
-|-------|--------|------|
-| Omega solo (RTX 4070) | 95 | 1592s |
-| Dragon solo (RTX 4090) | 100 | 1681s |
-| Delta solo (CPU, SLI 2× GFX 550M) | — | −124.01 at 1680s (not converged) |
-| Dragon + Omega combined | 78 | 1292s — **19% faster** |
+- `PeerIdentity` files contain private keys. Keep them out of version control
+  and readable only by the node's user.
+- Consensus defenses implemented here include commit-reveal for optimae,
+  deterministic seed derivation (reproducible training, no cherry-picked
+  seeds), quorum verification with tolerance, finality checkpoints, and
+  external anchoring. See [docs/SECURITY.md](docs/SECURITY.md) for the threat
+  model.
+- This repository needs no exchange, broker, or API credentials.
 
-### Island Model Migration
+## Limitations
 
-Speedup comes from **champion migration**: when one node finds a better solution, it broadcasts parameters via on-chain optimae. Other nodes inject these champions into their populations — the classic **island model** from evolutionary computation, implemented over a real blockchain. Delta (CPU-only, 3–4× slower) benefits most from receiving champions it couldn't find alone.
+- Version `0.1.0` (alpha). Wire and schema compatibility between versions is
+  not yet guaranteed; peers should run matching versions.
+- No PyPI distribution; source installs only.
+- Some older documents under [`docs/`](docs) predate the unified runtime and
+  may still describe the retired standalone optimizer/evaluator clients; the
+  package boundaries stated in this README are current.
 
-A simple random-step optimizer was used for these benchmarks. With full DEAP GA crossover and mutation, multi-node speedups will be significantly higher — the island model architecture is specifically designed for evolutionary algorithms where champion injection creates new genetic material for crossover.
+## Related repositories and docs
 
-## Contributing
-
-1. Fork the relevant repo
-2. Create a feature branch
-3. Make changes + add tests
-4. Run full test suite
-5. Submit a pull request
+- [doin-node](https://github.com/harveybc/doin-node) — unified participant
+  runtime (optimizer/evaluator/network roles selected by per-machine JSON
+  config)
+- [doin-plugins](https://github.com/harveybc/doin-plugins) — plugin
+  implementations and the agent-multi trading bridge
+- [doin-optimizer](https://github.com/harveybc/doin-optimizer),
+  [doin-evaluator](https://github.com/harveybc/doin-evaluator) — legacy
+  standalone clients, superseded by `doin-node`
+- Deeper docs in this repo: [INSTALL](docs/INSTALL.md),
+  [NETWORK](docs/NETWORK.md), [SECURITY](docs/SECURITY.md),
+  [SCALABILITY](docs/SCALABILITY.md), and the
+  [DOIN paper (PDF)](docs/doin-paper.pdf)
 
 ## License
 
-MIT License — see each package for details.
-
-## Author
-
-Harvey Bastidas — [harveybc](https://github.com/harveybc)
+Declared MIT in [`pyproject.toml`](pyproject.toml); the repository does not
+currently ship a standalone `LICENSE` file.
