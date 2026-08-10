@@ -24,7 +24,14 @@ from doin_core.models.quorum import QuorumConfig, QuorumManager, QuorumResult, Q
 from doin_core.models.reputation import ReputationScore, ReputationTracker
 from doin_core.models.resource_limits import BoundsValidator, ResourceLimits
 from doin_core.models.task import Task, TaskQueue, TaskStatus, TaskType
-from doin_core.models.transaction import Transaction, TransactionType
+from doin_core.models.transaction import (
+    TX_ID_PATTERN,
+    Transaction,
+    TransactionIntegrityError,
+    TransactionType,
+    canonical_transaction_bytes,
+    compute_transaction_id,
+)
 
 __all__ = [
     "BalanceTracker",
@@ -53,10 +60,14 @@ __all__ = [
     "TaskQueue",
     "TaskStatus",
     "TaskType",
+    "TX_ID_PATTERN",
     "Transaction",
+    "TransactionIntegrityError",
     "TransactionType",
     "TransferTransaction",
+    "canonical_transaction_bytes",
     "compute_block_reward",
+    "compute_transaction_id",
     "compute_commitment",
     "distribute_block_reward",
     "verify_commitment",
