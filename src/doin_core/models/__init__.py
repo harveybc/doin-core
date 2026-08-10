@@ -32,8 +32,22 @@ from doin_core.models.transaction import (
     canonical_transaction_bytes,
     compute_transaction_id,
 )
+from doin_core.models.verification import (
+    ChainVerificationOutcome,
+    ChainVerificationReport,
+    CheckStatus,
+    FailureCoordinate,
+    VerificationCheck,
+    VerifiedSuffixFromCheckpoint,
+)
 
 __all__ = [
+    "ChainVerificationOutcome",
+    "ChainVerificationReport",
+    "CheckStatus",
+    "FailureCoordinate",
+    "VerificationCheck",
+    "VerifiedSuffixFromCheckpoint",
     "BalanceTracker",
     "Block",
     "BlockHeader",

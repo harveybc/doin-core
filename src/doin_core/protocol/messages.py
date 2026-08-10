@@ -11,6 +11,39 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+#: Versioned protocol constant (findings 202-203). Version 2 introduces
+#: explicit chain identity (``chain_id`` + ``genesis_hash``) in
+#: ``ChainStatus``. Peers exchanging chain data MUST attest the same
+#: protocol version and chain identity before any block exchange; a
+#: mismatch — or an *absent* attestation — is a typed refusal, never
+#: field-default acceptance.
+PROTOCOL_VERSION = 2
+
+
+class PeerChainMismatchError(Exception):
+    """Typed refusal: a peer's chain attestation is incompatible with ours.
+
+    Raised before any block exchange. Carries the offending field with the
+    expected/received values (short identifiers only — never payloads).
+    """
+
+    def __init__(self, field: str, expected: object, received: object) -> None:
+        super().__init__(
+            f"peer chain mismatch on {field}: "
+            f"expected {expected!r}, received {received!r}"
+        )
+        self.field = field
+        self.expected = expected
+        self.received = received
+
+
+class ProtocolVersionMismatchError(PeerChainMismatchError):
+    """The peer speaks a different (or unattested) protocol version."""
+
+
+class ChainIdentityMismatchError(PeerChainMismatchError):
+    """The peer's chain_id / genesis_hash differs from (or omits) ours."""
+
 
 class MessageType(str, Enum):
     """Types of messages in the DON P2P protocol.
@@ -180,12 +213,59 @@ class TaskCompleted(BaseModel):
 
 
 class ChainStatus(BaseModel):
-    """Exchange chain status with a peer for sync."""
+    """Exchange chain status with a peer for sync.
+
+    ``protocol_version``, ``chain_id`` and ``genesis_hash`` are the peer's
+    explicit chain attestation (protocol v2, findings 202-203). The zero /
+    empty defaults exist only so that *legacy* (pre-v2) statuses can still
+    be parsed for diagnostics — they mean "not attested". Acceptance is
+    decided exclusively by :func:`validate_peer_chain_status`, which
+    refuses unattested or mismatched identity with a typed error. The
+    defaults are never grounds for acceptance.
+    """
 
     chain_height: int
     tip_hash: str
     tip_index: int
     finalized_height: int = 0
+    protocol_version: int = 0  # 0 = not attested (legacy peer)
+    chain_id: str = ""         # "" = not attested (legacy peer)
+    genesis_hash: str = ""     # "" = not attested (legacy peer)
+
+
+def validate_peer_chain_status(
+    status: ChainStatus,
+    *,
+    expected_chain_id: str,
+    expected_genesis_hash: str,
+    expected_protocol_version: int = PROTOCOL_VERSION,
+) -> None:
+    """Refuse a peer's chain status unless it exactly attests our chain.
+
+    Must be called BEFORE any block exchange with the peer. Raises:
+
+    - :class:`ProtocolVersionMismatchError` when the peer's protocol
+      version differs from ours or is absent (0);
+    - :class:`ChainIdentityMismatchError` when ``chain_id`` or
+      ``genesis_hash`` differs from ours or is absent ("").
+
+    Absent fields are refusals — a legacy peer that cannot attest its
+    chain identity is not accepted by default.
+    """
+    if status.protocol_version != expected_protocol_version:
+        raise ProtocolVersionMismatchError(
+            "protocol_version",
+            expected_protocol_version,
+            status.protocol_version,
+        )
+    if status.chain_id != expected_chain_id:
+        raise ChainIdentityMismatchError(
+            "chain_id", expected_chain_id, status.chain_id
+        )
+    if status.genesis_hash != expected_genesis_hash:
+        raise ChainIdentityMismatchError(
+            "genesis_hash", expected_genesis_hash, status.genesis_hash
+        )
 
 
 class BlockRequest(BaseModel):
