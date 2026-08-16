@@ -1,6 +1,6 @@
 # doin-core
 
-**Status: ACTIVE — core library of the DOIN family.**
+**Status: ACTIVE.**
 
 `doin-core` is the shared protocol library of DOIN, the Decentralized
 Optimization and Inference Network (older code docstrings abbreviate it
@@ -11,6 +11,19 @@ base classes plus the setuptools entry-point groups through which domain
 plugins are discovered. It contains no runtime: nodes, networking loops,
 storage, and analytics live in
 [doin-node](https://github.com/harveybc/doin-node).
+
+## Run this with an AI agent
+
+Paste this into Claude Code, Cursor, Codex, GitHub Copilot or any coding agent
+with shell access:
+
+> Read `AGENTS.md` in this repository and follow the **Agent quickstart**
+> section end to end: set up the environment, run the smoke test, execute the
+> example chain-build-and-verify script, then tell me the exact file paths
+> where I can see the results and one thing I should try first.
+
+`AGENTS.md` is the [agents.md](https://agents.md) convention, read natively by
+most coding agents.
 
 ## Role and non-responsibilities
 
@@ -61,14 +74,18 @@ cd doin-core
 pip install -e .          # add [dev] for the test toolchain
 ```
 
-Verified 2026-08-10 in the maintainer's Python 3.12 environment:
 `python -c "import doin_core; print(doin_core.__version__)"` prints `0.1.0`.
 There is no PyPI release; install from source.
+
+Note that `numpy` is needed in practice but is not declared as a dependency:
+`src/doin_core/plugins/base.py` imports it at module level, so
+`import doin_core.plugins` and the test suite both fail without it. Install it
+alongside the dev extras until this is fixed.
 
 ## Smallest working example
 
 The snippet below exercises identity, deterministic seeds, synthetic-data
-hashing, and block construction. Executed successfully on 2026-08-10:
+hashing, and block construction:
 
 ```python
 from doin_core.consensus.deterministic_seed import derive_seed, verify_seed
@@ -103,9 +120,9 @@ block = Block(header=header)
 print(identity.peer_id[:16], seed, digest[:16], block.hash[:16])
 ```
 
-Note: `hash_synthetic_data` requires `numpy`, which is a dependency of
-`doin-plugins` rather than of this package; the rest of the library needs only
-`pydantic` and `cryptography`.
+Note: the `doin_core.plugins` package requires `numpy` (see Installation). The
+consensus, models, protocol and crypto packages need only `pydantic` and
+`cryptography`.
 
 ## Plugin interface and entry-point groups
 
@@ -136,13 +153,14 @@ reference and production implementations consumed by
 ## Tests
 
 ```bash
-pip install -e .[dev]
+pip install -e .[dev] numpy
 pytest -q
 ```
 
-Observed 2026-08-10: `pytest -q --collect-only | tail -1` reports
-**280 tests collected** across 20 test files in [`tests/`](tests).
-(Collection count only; run `pytest -q` for a full pass.)
+`pytest -q` reports **280 passed** across 20 test files in [`tests/`](tests).
+`ruff` and `mypy` are configured in `pyproject.toml` and shipped in the dev
+extras, but CI runs neither, so the codebase is not known to be lint- or
+type-clean.
 
 ## Artifacts and outputs
 
@@ -159,7 +177,6 @@ treat those files as secrets (see below).
   seeds), quorum verification with tolerance, finality checkpoints, and
   external anchoring. See [docs/SECURITY.md](docs/SECURITY.md) for the threat
   model.
-- This repository needs no exchange, broker, or API credentials.
 
 ## Limitations
 
