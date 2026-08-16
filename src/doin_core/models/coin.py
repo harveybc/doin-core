@@ -191,13 +191,38 @@ def distribute_block_reward(
 ) -> CoinbaseTransaction:
     """Distribute the block reward among contributors.
 
-    Distribution formula:
-      1. Generator gets GENERATOR_FEE_FRACTION of block reward + all tx fees
-      2. Optimizer pool (OPTIMIZER_POOL_FRACTION) split by effective_increment weights
-      3. Evaluator pool (EVALUATOR_POOL_FRACTION) split by evaluation work weights
+    Distribution formula (declared prototype shares):
+      1. Generator gets GENERATOR_FEE_FRACTION of the minted subsidy
+         + ALL transaction fees
+      2. Optimizer pool (OPTIMIZER_POOL_FRACTION of the minted subsidy)
+         split by effective_increment × reward_fraction weights
+      3. Evaluator pool (EVALUATOR_POOL_FRACTION of the minted subsidy)
+         split by honest evaluation counts
 
-    If no optimizers contributed, their share goes to evaluators (and vice versa).
-    If nobody contributed (empty block), generator gets everything.
+    If no optimizers contributed, their pool goes to evaluators; if no
+    evaluators contributed, the (possibly merged) evaluator pool goes to
+    the generator. If nobody contributed (empty block), the generator
+    gets everything.
+
+    Conservation resolution rule (fee-conservation fix, 2026-08-15):
+      The declared 5% / 65% / 30% shares apply to the MINTED SUBSIDY ONLY
+      (``compute_block_reward(block_index)``); transaction fees are never
+      part of any pool base and are paid exactly once, wholly to the
+      generator, on top of its 5% subsidy share. The pre-fix code computed
+      both the generator cut and the pools from ``subsidy + fees`` while
+      ALSO paying fees to the generator directly, so fees entered the
+      distribution twice (observed: reward 50 + fees 10 → 67.15 paid out).
+      The generator output is now computed last, as the exact residual
+      ``total_reward - sum(pool outputs)``, so unclaimed pools and
+      per-share floating-point dust are absorbed by the generator and the
+      invariant ``sum(outputs) == block_reward + tx_fees`` holds to float
+      precision. A residual below MIN_REWARD is burned (never emitted).
+
+    Note on legacy replay: coinbase outputs are stored chain data and are
+    never recomputed during replay or block validation (block hashes do
+    not commit to them), so this arithmetic change affects newly generated
+    blocks only. Nodes generating blocks should upgrade together to keep
+    go-forward balance views consistent.
 
     Args:
         block_index: Current block height (determines reward via halving).
@@ -218,59 +243,43 @@ def distribute_block_reward(
             outputs=[],
         )
 
-    outputs: list[CoinbaseOutput] = []
-
-    # 1. Generator fee
-    generator_reward = total_reward * GENERATOR_FEE_FRACTION + tx_fees
-    if generator_reward >= MIN_REWARD:
-        outputs.append(CoinbaseOutput(
-            recipient=generator_id,
-            amount=generator_reward,
-            reason="block_generator",
-        ))
-
-    distributable = total_reward - (total_reward * GENERATOR_FEE_FRACTION)
-
     # Separate optimizers and evaluators
     optimizers = [c for c in contributors if c.role == "optimizer"]
     evaluators = [c for c in contributors if c.role == "evaluator"]
 
+    # Pools are fractions of the minted subsidy ONLY — never of tx fees.
+    optimizer_pool = block_reward * OPTIMIZER_POOL_FRACTION
+    evaluator_pool = block_reward * EVALUATOR_POOL_FRACTION
+
+    pool_outputs: list[CoinbaseOutput] = []
+
     # 2. Optimizer pool
-    optimizer_pool = distributable * OPTIMIZER_POOL_FRACTION
     total_opt_weight = sum(
         c.effective_increment * c.reward_fraction for c in optimizers
     )
-
-    if total_opt_weight > 0 and optimizer_pool >= MIN_REWARD:
-        for c in optimizers:
-            weight = c.effective_increment * c.reward_fraction
-            if weight <= 0:
-                continue
-            share = optimizer_pool * (weight / total_opt_weight)
-            if share >= MIN_REWARD:
-                outputs.append(CoinbaseOutput(
-                    recipient=c.peer_id,
-                    amount=share,
-                    reason="optimizer",
-                    domain_id=c.domain_id,
-                ))
-    elif optimizer_pool >= MIN_REWARD:
-        # No optimizers — redistribute to evaluators
-        evaluator_bonus = optimizer_pool
+    if total_opt_weight > 0:
+        if optimizer_pool >= MIN_REWARD:
+            for c in optimizers:
+                weight = c.effective_increment * c.reward_fraction
+                if weight <= 0:
+                    continue
+                share = optimizer_pool * (weight / total_opt_weight)
+                if share >= MIN_REWARD:
+                    pool_outputs.append(CoinbaseOutput(
+                        recipient=c.peer_id,
+                        amount=share,
+                        reason="optimizer",
+                        domain_id=c.domain_id,
+                    ))
     else:
-        evaluator_bonus = 0.0
-
-    # Check if evaluator_bonus was set
-    if 'evaluator_bonus' not in dir():
-        evaluator_bonus = 0.0
+        # No optimizers — their pool cascades to the evaluators.
+        evaluator_pool += optimizer_pool
 
     # 3. Evaluator pool
-    evaluator_pool = distributable * EVALUATOR_POOL_FRACTION + evaluator_bonus
     total_eval_weight = sum(
         c.evaluations_completed * (1.0 if c.agreed_with_quorum else 0.0)
         for c in evaluators
     )
-
     if total_eval_weight > 0 and evaluator_pool >= MIN_REWARD:
         for c in evaluators:
             if not c.agreed_with_quorum:
@@ -280,21 +289,29 @@ def distribute_block_reward(
                 continue
             share = evaluator_pool * (weight / total_eval_weight)
             if share >= MIN_REWARD:
-                outputs.append(CoinbaseOutput(
+                pool_outputs.append(CoinbaseOutput(
                     recipient=c.peer_id,
                     amount=share,
                     reason="evaluator",
                     domain_id=c.domain_id,
                 ))
-    elif evaluator_pool >= MIN_REWARD:
-        # No evaluators — give remainder to generator
-        outputs[0].amount += evaluator_pool if outputs else 0
+    # else: the unclaimed evaluator pool (including any cascaded optimizer
+    # pool) falls through to the generator residual below.
 
-    # Handle any undistributed remainder (goes to generator)
-    distributed = sum(o.amount for o in outputs)
-    remainder = total_reward - distributed
-    if remainder >= MIN_REWARD and outputs:
-        outputs[0].amount += remainder
+    # 1. Generator: 5% subsidy base + all tx fees + unclaimed pools +
+    #    floating-point dust, computed as the exact residual so that
+    #    sum(outputs) == block_reward + tx_fees.
+    distributed_to_pools = sum(o.amount for o in pool_outputs)
+    generator_reward = total_reward - distributed_to_pools
+
+    outputs: list[CoinbaseOutput] = []
+    if generator_reward >= MIN_REWARD:
+        outputs.append(CoinbaseOutput(
+            recipient=generator_id,
+            amount=generator_reward,
+            reason="block_generator",
+        ))
+    outputs.extend(pool_outputs)
 
     return CoinbaseTransaction(
         block_index=block_index,
