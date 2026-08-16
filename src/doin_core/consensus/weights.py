@@ -43,6 +43,14 @@ class WeightConfig:
     demand_smoothing: float = 0.1  # Minimum demand factor (prevents zero)
     progress_cap: float = 2.0  # Cap progress factor to prevent runaway
 
+    # NOT-FOR-DEPLOYMENT (doc 40 §2.2 / doc 39 §8 target behavior, opt-in):
+    # when True, a domain WITHOUT synthetic verification receives
+    # verification_strength 0.0 instead of the legacy 0.5 fallback —
+    # "absence of an admitted generator means zero challenge authority".
+    # Default False preserves the deployed implemented_prototype behavior
+    # exactly.  Flipping this default is an owner/auditor decision.
+    untrusted_gate_zero_authority: bool = False
+
 
 class VerifiedUtilityWeights:
     """Computes dynamic domain weights from blockchain data.
@@ -115,6 +123,10 @@ class VerifiedUtilityWeights:
             # Verification strength — synthetic data gives higher trust
             if stats.has_synthetic_data:
                 verification_strength = 1.0
+            elif self.config.untrusted_gate_zero_authority:
+                # NOT-FOR-DEPLOYMENT opt-in (doc 40 §2.2 / doc 39 §8):
+                # no admitted generator -> zero challenge authority.
+                verification_strength = 0.0
             else:
                 # Without synthetic data validation we still allow block
                 # generation, but with reduced verification trust.  A weight
