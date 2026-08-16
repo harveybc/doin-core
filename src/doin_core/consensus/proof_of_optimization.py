@@ -1,8 +1,31 @@
 """Proof-of-Optimization — the core consensus mechanism for DON.
 
-Instead of cryptographic proof of work, block generation is triggered when
-the weighted sum of performance increments across all domains exceeds a
-dynamic threshold. The threshold adjusts to maintain a target block time.
+TRUTH LABELS (work-plan document 40, doctrine alignment order 2026-08-15):
+`implemented_prototype` | `trusted_consortium_current` |
+`owner_directed_target` | `conditional_untrusted_research`.
+
+[implemented_prototype] Instead of cryptographic proof of work, block
+generation is triggered when the weighted sum of performance increments
+across all domains exceeds a dynamic threshold, and the threshold adjusts
+to maintain a target block time. Both mechanisms are code facts of the
+prototype, not ratified production economics: the weighted raw sum has no
+formal cross-domain numeraire (a cross-domain optimality claim would need
+one; P14/P18 own that question), and the time-targeted threshold is
+recorded drift relative to the owner-directed fixed progress-bin design
+(document 40 §5/§7).
+
+[implemented_prototype] `EVALUATION_SERVED` events are recorded on chain
+and feed only the task-count statistic `observed_on_chain_task_share`;
+the coinbase does not pay the node that served the inference.
+
+[owner_directed_target] Under the inference-service boundary a node could
+charge for timely hosted inference when it accepts a client's bid; that
+payment path is not implemented here (document 40 §6).
+
+[trusted_consortium_current] This consensus operates today inside a
+trusted owner/consortium fleet; it does not provide Byzantine, Sybil,
+collusion or permissionless economic security, and no current domain
+qualifies for the conditional untrusted generated-gate profile.
 """
 
 from __future__ import annotations
@@ -95,7 +118,17 @@ class ProofOfOptimization:
     def record_evaluation(
         self, domain_id: str, peer_id: str, request_id: str
     ) -> None:
-        """Record a served evaluation request."""
+        """Record a served evaluation request.
+
+        [implemented_prototype] This writes an `EVALUATION_SERVED`
+        transaction on chain. It feeds the task-count statistic
+        `observed_on_chain_task_share` only; it does NOT pay the serving
+        node — no coinbase output is created for served inference.
+
+        [owner_directed_target] A paid hosted-inference path (node accepts
+        a client's bid) would be a separate, later mechanism (P14); do not
+        describe this method as present payment.
+        """
         tx = Transaction(
             tx_type=TransactionType.EVALUATION_SERVED,
             domain_id=domain_id,
@@ -156,8 +189,11 @@ class ProofOfOptimization:
     def _adjust_threshold(self) -> None:
         """Adjust the threshold to maintain target block time.
 
-        If blocks are coming too fast, increase threshold.
-        If blocks are coming too slow, decrease threshold.
+        [implemented_prototype] If blocks are coming too fast, increase
+        threshold; if too slow, DECREASE it — the quality bar eases to
+        meet wall-clock cadence. Code fact; recorded drift relative to
+        the owner-directed fixed progress-bin quality contract, which
+        would not ease to meet cadence (document 40 §4/§5).
         """
         elapsed = time.time() - self.state.last_block_time
         target = self.state.target_block_time_seconds

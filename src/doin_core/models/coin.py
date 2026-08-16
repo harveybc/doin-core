@@ -1,18 +1,38 @@
-"""DOIN Coin — native token for the Decentralized Optimization and Inference Network.
+"""DOIN Coin — prototype token models for the Decentralized Optimization and Inference Network.
 
-Each block mints new coins (block reward) distributed among participants
-proportional to their contribution weights. This creates real economic
-incentives for honest optimization and evaluation work.
+TRUTH LABELS (work-plan document 40, doctrine alignment order 2026-08-15):
+every economic claim in this module carries exactly one label —
+`implemented_prototype` | `trusted_consortium_current` |
+`owner_directed_target` | `conditional_untrusted_research`.
 
-Distribution follows the game-theoretic VUW weights:
-  - Optimizers: rewarded for accepted optimae (proportional to effective increment × reward_fraction)
-  - Evaluators: rewarded for honest verification work (agreed with quorum)
-  - Block generator: small fee for assembling the block
+[implemented_prototype] Each block mints a block reward distributed among
+contributors by role: 5% block generator / 65% optimizer pool / 30%
+evaluator pool, with a Bitcoin-like halving schedule and a 21,000,000
+supply bound. These are reproducible code facts of the current prototype.
+They are NOT owner-ratified production economics and must not be cited as
+canonical DOIN economics.
 
-The block reward halves periodically (like Bitcoin) to create scarcity.
-Total supply is bounded.
+[implemented_prototype] Known conservation defect (AUD-DOIN-20260815-248):
+with block_reward=50, tx_fees=10 and no contributors,
+`distribute_block_reward()` emits outputs totaling 67.15 although only 60
+is available — fees are included in `total_reward`, added again to the
+generator, then cascaded through the role pools. This is a code defect,
+not an economic-policy choice. Its separately audited arithmetic
+correction must preserve the declared prototype shares and enforce
+`sum(outputs) == block_reward + transaction_fees`. This docstring records
+the defect; it does not fix it.
 
-Coin transfers are standard UTXO-like transactions included in blocks.
+[trusted_consortium_current] The operating trusted-consortium deployment
+does not require a native coin to be useful; this module is retained as a
+replayable prototype profile.
+
+[owner_directed_target] The owner-directed issuance target would mint one
+unit per completely filled verified progress certificate and zero for an
+empty progress bin; event/heartbeat blocks would carry zero issuance.
+That target is not implemented here, and nothing in this module may be
+read as evidence of it.
+
+Coin transfers are standard account-based transactions included in blocks.
 """
 
 from __future__ import annotations
@@ -28,14 +48,19 @@ from pydantic import BaseModel, Field
 
 
 # ── Constants ────────────────────────────────────────────────────────
+# [implemented_prototype] The constants below mirror Bitcoin's schedule.
+# They are reproducible code facts, not owner-ratified production economics
+# (work-plan document 40 §5). The owner-directed issuance target — one unit
+# per completely filled verified progress certificate, zero for an empty
+# bin — would replace this schedule and is NOT implemented here.
 
-INITIAL_BLOCK_REWARD = 50.0          # Coins minted per block initially
-HALVING_INTERVAL = 210_000           # Blocks between halvings (like Bitcoin)
-MAX_SUPPLY = 21_000_000.0            # Maximum total supply
-GENERATOR_FEE_FRACTION = 0.05        # 5% of block reward goes to block generator
-OPTIMIZER_POOL_FRACTION = 0.65       # 65% goes to optimizers (proportional to work)
-EVALUATOR_POOL_FRACTION = 0.30       # 30% goes to evaluators (proportional to work)
-MIN_REWARD = 1e-8                    # Minimum distributable amount (like satoshi)
+INITIAL_BLOCK_REWARD = 50.0          # [implemented_prototype] coins minted per block initially
+HALVING_INTERVAL = 210_000           # [implemented_prototype] blocks between halvings (Bitcoin-like)
+MAX_SUPPLY = 21_000_000.0            # [implemented_prototype] prototype supply bound
+GENERATOR_FEE_FRACTION = 0.05        # [implemented_prototype] 5% of block reward to block generator
+OPTIMIZER_POOL_FRACTION = 0.65       # [implemented_prototype] 65% to optimizers (proportional to work)
+EVALUATOR_POOL_FRACTION = 0.30       # [implemented_prototype] 30% to evaluators (proportional to work)
+MIN_REWARD = 1e-8                    # [implemented_prototype] minimum distributable amount
 
 
 # ── Coin Models ──────────────────────────────────────────────────────
@@ -59,12 +84,12 @@ class CoinbaseOutput(BaseModel):
 class CoinbaseTransaction(BaseModel):
     """Block reward transaction — mints new coins and distributes them.
 
-    Every block has exactly one coinbase transaction as its first
-    transaction. This is the ONLY way new coins are created.
-
-    Like Bitcoin's coinbase, it has no inputs — coins come from nothing.
-    Unlike Bitcoin, the reward is split among multiple participants
-    based on their game-theoretic contribution weights.
+    [implemented_prototype] Every block has exactly one coinbase
+    transaction as its first transaction; it is the only way the prototype
+    creates new coins. Like Bitcoin's coinbase, it has no inputs — coins
+    come from nothing. Unlike Bitcoin, the reward is split among multiple
+    participants based on their contribution weights. Code fact, not
+    ratified production economics.
     """
 
     block_index: int = Field(description="Block this coinbase belongs to")
@@ -127,14 +152,18 @@ class TransferTransaction(BaseModel):
 def compute_block_reward(block_index: int) -> float:
     """Compute the block reward for a given block height.
 
-    Halves every HALVING_INTERVAL blocks. Returns 0 when max supply
-    would be exceeded.
-
-    Bitcoin-style halving schedule:
-      blocks 0-209999:     50 DOIN
+    [implemented_prototype] Halves every HALVING_INTERVAL blocks and
+    returns 0 when the reward rounds below MIN_REWARD. This Bitcoin-style
+    schedule is a code fact of the prototype, not ratified production
+    economics:
+      blocks 0-209999:      50 DOIN
       blocks 210000-419999: 25 DOIN
       blocks 420000-629999: 12.5 DOIN
       ...and so on until reward rounds to zero.
+
+    [owner_directed_target] The directed issuance design would tie minting
+    to completely filled verified progress certificates instead of block
+    height; that design is not implemented by this function.
     """
     halvings = block_index // HALVING_INTERVAL
     if halvings >= 64:  # After 64 halvings, reward is effectively 0
@@ -191,13 +220,26 @@ def distribute_block_reward(
 ) -> CoinbaseTransaction:
     """Distribute the block reward among contributors.
 
-    Distribution formula:
-      1. Generator gets GENERATOR_FEE_FRACTION of block reward + all tx fees
+    [implemented_prototype] Distribution formula as currently coded:
+      1. Generator gets GENERATOR_FEE_FRACTION of (block reward + fees) + all tx fees again
       2. Optimizer pool (OPTIMIZER_POOL_FRACTION) split by effective_increment weights
       3. Evaluator pool (EVALUATOR_POOL_FRACTION) split by evaluation work weights
 
     If no optimizers contributed, their share goes to evaluators (and vice versa).
-    If nobody contributed (empty block), generator gets everything.
+    If nobody contributed (empty block), generator gets everything. These are
+    code facts of the prototype, not owner-ratified production economics.
+
+    [implemented_prototype] KNOWN CONSERVATION DEFECT (AUD-DOIN-20260815-248):
+    because fees enter `total_reward` and are then added again to the
+    generator, block_reward=50 + tx_fees=10 with no contributors yields
+    outputs totaling 67.15 from 60 available. The separately audited fix
+    must preserve the declared 5/65/30 prototype shares and enforce
+    `sum(outputs) == block_reward + tx_fees`. This docstring documents the
+    defect; the arithmetic below is intentionally untouched here.
+
+    [owner_directed_target] Under the directed design, an empty progress
+    bin would mint zero; the generator-takes-everything empty-block
+    behavior below would not survive that design.
 
     Args:
         block_index: Current block height (determines reward via halving).

@@ -29,7 +29,14 @@ class TransactionType(str, Enum):
     TASK_COMPLETED = "task_completed"
     TASK_FAILED = "task_failed"
 
-    # Inference served to clients
+    # Inference served to clients.
+    # [implemented_prototype] Recorded on chain and counted into the
+    # task-count statistic `observed_on_chain_task_share` (a censored
+    # operational statistic, not a price); the coinbase does NOT pay the
+    # serving node for this event.
+    # [owner_directed_target] Paid hosted inference (node accepts a
+    # client's bid) would be a separate future mechanism (P14); this
+    # transaction type must not be described as present payment.
     EVALUATION_SERVED = "evaluation_served"
 
     # Domain lifecycle

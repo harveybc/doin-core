@@ -1,5 +1,22 @@
 """Difficulty adjustment — controls block time via threshold adaptation.
 
+TRUTH LABELS (work-plan document 40, doctrine alignment order 2026-08-15):
+`implemented_prototype` | `trusted_consortium_current` |
+`owner_directed_target` | `conditional_untrusted_research`.
+
+[implemented_prototype] This module time-targets the optimization
+threshold: the quality bar MOVES (including downward) to meet a
+wall-clock block cadence. That is a code fact of the current prototype.
+Lowering a quality threshold to maintain a block-time target is recorded
+implementation drift relative to the owner-directed design, not ratified
+production economics (document 40 §5).
+
+[owner_directed_target] The directed design would use a fixed, versioned
+progress-bin quality contract that does not become easier to satisfy
+merely to meet wall-clock cadence; ledger liveness would be provided by
+event/heartbeat blocks carrying zero issuance. That design is not
+implemented by this module.
+
 Implements a hybrid Bitcoin/Ethereum approach adapted for Proof of Optimization:
 
 1. **Epoch-based adjustment (Bitcoin-style):** Every EPOCH_LENGTH blocks,
@@ -84,6 +101,10 @@ class DifficultyState:
 
 class DifficultyController:
     """Controls the Proof-of-Optimization threshold to maintain target block time.
+
+    [implemented_prototype] The controller adjusts the quality threshold —
+    in both directions — to hit a wall-clock cadence. Code fact; not
+    owner-ratified production economics (see module docstring).
 
     Two-level adjustment:
       1. Epoch adjustment (every EPOCH_LENGTH blocks): major correction

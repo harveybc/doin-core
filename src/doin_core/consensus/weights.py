@@ -1,15 +1,45 @@
 """Verified Utility Weighting (VUW) — dynamic domain weight calculation.
 
-Domain weights determine how much each model's optimization contributes
-to block generation. Computed entirely from blockchain data.
+TRUTH LABELS (work-plan document 40, doctrine alignment order 2026-08-15):
+`implemented_prototype` | `trusted_consortium_current` |
+`owner_directed_target` | `conditional_untrusted_research`.
+
+[implemented_prototype] Domain weights determine how much each model's
+optimization contributes to block generation. Computed entirely from
+blockchain data as coded:
 
 weight(domain) = base_weight × demand_factor × (1 + progress_factor) × verification_strength
 
 Where:
-- demand_factor: proportion of served inference tasks (from chain)
-- progress_factor: recent performance improvements relative to history
-- verification_strength: 1.0 with synthetic verification, 0.5 without it
-  (unverified domains remain usable but contribute at reduced trust)
+- demand_factor: derived from `observed_on_chain_task_share`, the
+  proportion of served inference tasks recorded on chain. That share is a
+  censored operational statistic — it is NOT a price and NOT evidence of
+  willingness to pay (document 40 §6).
+- progress_factor: recent performance improvements relative to history.
+- verification_strength: 1.0 with synthetic verification, 0.5 without it.
+
+[implemented_prototype] The unconditional 0.5 fallback for domains without
+synthetic data is a code fact. It contradicts the SyntheticDataPlugin ABC
+docstring in `doin_core/plugins/base.py`, which states such domains get
+ZERO consensus weight — a recorded contradiction (document 40 §5), noted
+here and resolved separately.
+
+[trusted_consortium_current] In the operating trusted-consortium profile,
+skipping synthetic re-evaluation is a named profile capability of an
+operator that accepts reports; identity, ancestry, artifact and lineage
+verification still run.
+
+[conditional_untrusted_research] Under the untrusted generated-gate
+profile, a domain without an admitted content-addressed generator would
+have ZERO authority; the unconditional 0.5 fallback would be unsafe there
+and is recorded drift relative to that profile. No current domain passes
+document 39's admission program.
+
+[implemented_prototype] The weighted raw sum of domain increments has no
+formal cross-domain numeraire. It is a configured scheduling statistic; a
+claim of economically optimal cross-domain allocation would require a
+normalization or exchange-derived numeraire that survives adversarial
+analysis (open question owned by P14/P18).
 """
 
 from __future__ import annotations
@@ -116,13 +146,20 @@ class VerifiedUtilityWeights:
             if stats.has_synthetic_data:
                 verification_strength = 1.0
             else:
-                # Without synthetic data validation we still allow block
-                # generation, but with reduced verification trust.  A weight
-                # of zero would prevent ANY blocks from ever being created
-                # (chicken-and-egg).
+                # [implemented_prototype] Without synthetic data validation
+                # the code still allows block generation at reduced trust; a
+                # weight of zero would prevent ANY blocks from ever being
+                # created (chicken-and-egg). Code fact: this contradicts the
+                # plugins/base.py ABC docstring ("ZERO consensus weight").
+                # [conditional_untrusted_research] Under the untrusted
+                # generated-gate profile this fallback would grant zero
+                # authority, not 0.5 (document 40 §2.2/§5).
                 verification_strength = 0.5
 
-            # Demand factor — proportion of total inference demand
+            # Demand factor — observed_on_chain_task_share: the on-chain
+            # proportion of served inference tasks. [implemented_prototype]
+            # A censored operational statistic, not a price and not market
+            # demand (document 40 §6).
             if total_inference > 0:
                 demand = stats.inference_tasks_completed / total_inference
             else:

@@ -12,6 +12,62 @@ plugins are discovered. It contains no runtime: nodes, networking loops,
 storage, and analytics live in
 [doin-node](https://github.com/harveybc/doin-node).
 
+## Truth labels (doctrine)
+
+Every economic or trust claim in this repository carries exactly one of four
+labels (work-plan document 40, doctrine alignment order 2026-08-15):
+
+- `implemented_prototype` — what the code does today; a reproducible code
+  fact, whether or not anyone ratified it as policy.
+- `trusted_consortium_current` — the operating profile: one trusted
+  owner/consortium fleet. Present tense belongs only here and to code facts.
+- `owner_directed_target` — directed design boundary the code does not yet
+  implement. Conditional tense, always.
+- `conditional_untrusted_research` — the untrusted generated-gate profile,
+  valid only when the full generator-admission program exists. No current
+  domain qualifies.
+
+Labeled claims about this library:
+
+- [implemented_prototype] `models/coin.py` mints 50 DOIN per block with
+  Bitcoin-like halving to a 21,000,000 bound and splits rewards 5% generator
+  / 65% optimizer pool / 30% evaluator pool. These are code facts, not
+  owner-ratified production economics, and must not be cited as canonical
+  DOIN economics.
+- [implemented_prototype] `distribute_block_reward()` has a known
+  fee-conservation defect (AUD-DOIN-20260815-248): block_reward=50 +
+  tx_fees=10 with no contributors distributes 67.15 from 60 available. A
+  separately audited arithmetic correction must preserve the declared shares
+  and enforce `sum(outputs) == block_reward + tx_fees`.
+- [implemented_prototype] `consensus/difficulty.py` and
+  `consensus/proof_of_optimization.py` time-target the optimization
+  threshold: the quality bar moves (including downward) to meet wall-clock
+  block cadence. Recorded drift relative to the owner-directed fixed
+  progress-bin design.
+- [implemented_prototype] `consensus/weights.py` grants a 0.5
+  verification-strength fallback to domains without synthetic data. This
+  contradicts the plugin ABC docstring (which says zero) — a recorded
+  contradiction, resolved separately.
+- [implemented_prototype] `EVALUATION_SERVED` transactions are recorded on
+  chain and feed only the task-count statistic
+  `observed_on_chain_task_share` — a censored operational statistic, not a
+  price; the coinbase does not pay served inference.
+- [trusted_consortium_current] The library operates today inside a trusted
+  owner/consortium fleet; identity, ancestry, artifact integrity, duplicate
+  claims, chain consistency and lineage are verified. It does not provide
+  Byzantine, Sybil, collusion or permissionless economic security. No native
+  coin is required for this profile to be useful.
+- [owner_directed_target] Issuance would be one unit per completely filled
+  verified progress certificate, zero for an empty bin; event/heartbeat
+  blocks would carry zero issuance; a node could charge for hosted inference
+  when it accepts a bid. None of this is implemented here.
+- [conditional_untrusted_research] An untrusted generated-gate deployment
+  would additionally require the full admission program of work-plan
+  document 39 (authenticated participants, commit-before-challenge entropy,
+  admitted content-addressed generator, deterministic draw reconstruction,
+  calibrated ensemble tolerance, adversarial admission). No current domain
+  passes it.
+
 ## Role and non-responsibilities
 
 **Role:** the single source of truth for protocol data structures and
@@ -116,8 +172,13 @@ three ABCs:
   current_best_performance)`, `get_domain_metadata()`
 - `InferencePlugin` — `configure()`, `evaluate(parameters, data)`
 - `SyntheticDataPlugin` — `configure()`, deterministic `generate(seed)` and
-  `generate_with_hash(seed)`; synthetic data is mandatory for verification
-  trust (domains without it get zero consensus weight)
+  `generate_with_hash(seed)`. [implemented_prototype] The ABC docstring
+  states that domains without a synthetic-data plugin get zero consensus
+  weight, but the implemented weight calculator
+  ([`consensus/weights.py`](src/doin_core/consensus/weights.py)) grants them
+  a 0.5 verification-strength fallback — a recorded contradiction (work-plan
+  document 40 §5), resolved separately. Under the conditional untrusted
+  profile such domains would have zero authority.
 
 [`src/doin_core/plugins/loader.py`](src/doin_core/plugins/loader.py) discovers
 implementations through these setuptools entry-point groups:
@@ -158,7 +219,9 @@ treat those files as secrets (see below).
   deterministic seed derivation (reproducible training, no cherry-picked
   seeds), quorum verification with tolerance, finality checkpoints, and
   external anchoring. See [docs/SECURITY.md](docs/SECURITY.md) for the threat
-  model.
+  model. [trusted_consortium_current] These defenses operate today inside a
+  trusted owner/consortium fleet; they do not provide Byzantine, Sybil,
+  collusion or permissionless economic security (see "Truth labels" above).
 - This repository needs no exchange, broker, or API credentials.
 
 ## Limitations
@@ -169,6 +232,11 @@ treat those files as secrets (see below).
 - Some older documents under [`docs/`](docs) predate the unified runtime and
   may still describe the retired standalone optimizer/evaluator clients; the
   package boundaries stated in this README are current.
+- Older documents under [`docs/`](docs) (including NETWORK/SECURITY/
+  SCALABILITY and the paper HTML/PDF) present block rewards, fees, and
+  economics without truth labels. Read every such claim as at most
+  `implemented_prototype` — none of it is owner-ratified production
+  economics; the labeled section above is authoritative.
 
 ## Related repositories and docs
 
