@@ -210,18 +210,20 @@ ul.compact li { margin-bottom: 1pt; }
 
 <div class="title-block">
   <div class="paper-title">DOIN: A Game-Theoretic Framework for Decentralized<br>Multi-Model Optimization via Proof of Optimization</div>
-  <div class="author-name">Harvey Bastidas</div>
-  <div class="author-affil">School of Systems and Computer Engineering<br>Universidad del Valle, Cali, Colombia<br>harvey.bastidas@correounivalle.edu.co</div>
+  <div class="author-name">Harvey Demian Bastidas Caicedo</div>
+  <div class="author-affil">Independent Open-Source Software Developer<br>T&uacute;querres, Nari&ntilde;o, Colombia<br>harveybc@ingeni-us.com</div>
 </div>
 
 <div class="abstract-block">
   <div class="section-title-abs">Abstract</div>
-  <p>We present DOIN, a Decentralized Optimization and Inference Network that repurposes blockchain consensus for verified machine learning optimization. Rather than expending computational resources on cryptographic puzzles as in Proof of Work (PoW), DOIN introduces <em>Proof of Optimization</em> (PoO), a novel consensus mechanism in which block generation is triggered by verified performance improvements across multiple simultaneous optimization domains. We formalize the system model, define a multi-domain weighting scheme called Verified Useful Work (VUW), and prove that honest optimization constitutes a Nash equilibrium under our incentive structure. A commit-reveal protocol with quorum-based verification using per-evaluator synthetic data provides robustness against front-running, parameter theft, and collusion attacks. We identify 25 attack vectors and implement 10 hardening measures, achieving security guarantees comparable to established blockchain systems while converting all consensus computation into productive ML optimization work. The reference implementation comprises five Python packages with 291 tests and a plugin architecture for extensibility.</p>
+  <p>We present DOIN, a Decentralized Optimization and Inference Network that repurposes blockchain consensus for verified machine learning optimization. Rather than expending computational resources on cryptographic puzzles as in Proof of Work (PoW), DOIN introduces <em>Proof of Optimization</em> (PoO), a consensus mechanism in which block generation is triggered by verified performance improvements across multiple simultaneous optimization domains. We formalize the system model, define a multi-domain weighting scheme called Verified Useful Work (VUW), and analyze conditions under which honest optimization is a Nash equilibrium. A commit-reveal protocol with quorum-based verification using per-evaluator synthetic data is designed to reduce front-running, parameter theft, and collusion risk. We enumerate 25 attack vectors and describe 10 implemented hardening controls. These are protocol and implementation claims under stated assumptions, not a claim of security equivalence with established production blockchains. The current reference implementation comprises three active Python packages with 733 collected tests and a plugin architecture for extensibility.</p>
 </div>
 
 <div class="keywords">
   <em>Index Terms</em>&mdash;decentralized optimization, blockchain consensus, proof of useful work, federated learning, game theory, machine learning, Nash equilibrium
 </div>
+
+<p class="no-indent"><strong>Manuscript status.</strong> This is a working preprint and has not been peer reviewed. Formal claims depend on the assumptions stated in each result, and implementation tests establish software behavior rather than production Byzantine-security guarantees.</p>
 
 <!-- I. INTRODUCTION -->
 <h2>I. Introduction</h2>
@@ -230,16 +232,16 @@ ul.compact li { margin-bottom: 1pt; }
 
 <p>This paper addresses a natural question: <em>can the computational work required for blockchain consensus be redirected toward useful machine learning optimization?</em> We answer affirmatively by introducing the Decentralized Optimization and Inference Network (DOIN), a system that replaces Proof of Work with <em>Proof of Optimization</em> (PoO). In DOIN, nodes earn the right to propose blocks by demonstrating verified improvements to ML models across one or more optimization domains.</p>
 
-<p>The key challenge in designing such a system is ensuring that claimed optimization improvements are genuine. Unlike cryptographic hash puzzles, where verification is trivial, verifying ML optimization quality requires evaluating model performance&mdash;a process that is itself computationally expensive and susceptible to manipulation. DOIN addresses this through a combination of commit-reveal protocols, quorum-based verification with per-evaluator synthetic data, and an asymmetric reputation system that makes dishonesty a dominated strategy.</p>
+<p>The key challenge in designing such a system is ensuring that claimed optimization improvements are genuine. Unlike cryptographic hash puzzles, where verification is trivial, verifying ML optimization quality requires evaluating model performance&mdash;a process that is itself computationally expensive and susceptible to manipulation. DOIN addresses this through a combination of commit-reveal protocols, quorum-based verification with per-evaluator synthetic data, and an asymmetric reputation system intended to make dishonest strategies economically unattractive under the model assumptions.</p>
 
 <p>Our contributions are as follows:</p>
 
 <ul class="compact">
   <li>A formal system model for decentralized multi-domain ML optimization with configurable node roles (Section III).</li>
   <li>The Proof of Optimization consensus mechanism with Verified Useful Work (VUW) weighting and dynamic threshold adjustment (Section IV).</li>
-  <li>A game-theoretic analysis proving that honest optimization is a Nash equilibrium under the DOIN incentive structure (Section V).</li>
+  <li>A game-theoretic analysis of conditions under which honest optimization is a Nash equilibrium under the DOIN incentive structure (Section V).</li>
   <li>A comprehensive security analysis covering 25 attack vectors with 10 implemented hardening measures (Section VI).</li>
-  <li>A reference implementation with 291 tests demonstrating practical feasibility (Section VII).</li>
+  <li>A three-package reference implementation with 733 collected tests covering protocol, runtime and plugin behavior (Section VII).</li>
 </ul>
 
 <!-- II. RELATED WORK -->
@@ -251,7 +253,7 @@ ul.compact li { margin-bottom: 1pt; }
 
 <h3>B. Blockchain-Based Machine Learning</h3>
 
-<p class="no-indent">Several systems have explored combining blockchain with machine learning. FLChain [5] places federated learning on a blockchain but retains the FL aggregation model. DInEMMo [6] proposes decentralized inference but does not address optimization consensus. Ocean Protocol [7] decentralizes data marketplaces but not the optimization process itself. Unlike these systems, DOIN makes ML optimization the <em>consensus mechanism itself</em>, not merely an application running atop a blockchain.</p>
+<p class="no-indent">Several systems have explored combining blockchain with machine learning. FLChain [5] places federated learning on a blockchain but retains the FL aggregation model. The author's earlier Master's in Engineering work [6] implemented decentralized evolutionary computation with an optimization proof of work and blockchain-based traceability; DOIN is the continuing software and protocol line derived from that research. Ocean Protocol [7] decentralizes data marketplaces but not the optimization process itself. Unlike these systems, DOIN makes ML optimization part of the <em>consensus mechanism itself</em>, not merely an application running atop a blockchain.</p>
 
 <h3>C. Proof of Useful Work</h3>
 
@@ -553,34 +555,30 @@ ul.compact li { margin-bottom: 1pt; }
 <!-- VII. IMPLEMENTATION -->
 <h2>VII. Implementation</h2>
 
-<p class="no-indent">The reference implementation of DOIN consists of five Python packages, designed with a modular plugin architecture using setuptools entry points for extensibility.</p>
+<p class="no-indent">The current reference implementation of DOIN consists of three active Python packages, designed with a modular plugin architecture using setuptools entry points for extensibility. Earlier standalone optimizer and evaluator clients are retained only as historical repositories and have been superseded by the unified node runtime.</p>
 
 <h3>A. Package Architecture</h3>
 
 <p class="no-indent">The system is organized into the following packages:</p>
 
-<p><em>doin-core:</em> The blockchain data structures, consensus engine, reputation system, and task queue. This package implements the PoO consensus protocol, VUW weighting, and fork choice rule.</p>
+<p><em>doin-core:</em> The pure protocol library: blockchain data structures, consensus rules, reputation and incentive models, cryptographic identity, wire schemas, and plugin abstract interfaces.</p>
 
-<p><em>doin-node:</em> The peer-to-peer networking layer, block propagation, and node lifecycle management. Implements the commit-reveal protocol and quorum selection.</p>
+<p><em>doin-node:</em> The unified participant runtime. One process can perform configured optimizer, evaluator and relay roles and owns peer networking, block propagation, chain persistence, shared-population coordination, monitoring and OLAP analytics.</p>
 
-<p><em>doin-optimizer:</em> Optimization engine supporting gradient-based and black-box optimization methods. Provides the interface between ML frameworks and the DOIN protocol.</p>
-
-<p><em>doin-evaluator:</em> Evaluation engine implementing synthetic data generation, model evaluation, and result aggregation. Handles the per-evaluator seed derivation from equation (9).</p>
-
-<p><em>doin-plugins:</em> Plugin registry and reference implementations for domain-specific optimization tasks, including neural architecture search, hyperparameter optimization, and reinforcement learning.</p>
+<p><em>doin-plugins:</em> Reference plugin implementations and adapters that connect external optimization domains to the protocol interfaces. Domain models and search implementations remain in their native repositories.</p>
 
 <h3>B. Plugin System</h3>
 
-<p class="no-indent">DOIN's extensibility is achieved through Python setuptools entry points. New optimization domains, evaluation metrics, and consensus parameters can be added without modifying core packages. Each plugin registers three entry points: a domain definition (model architecture and loss function), a synthetic data generator, and an evaluation function.</p>
+<p class="no-indent">DOIN's extensibility is achieved through Python setuptools entry points. External packages may register optimization, inference and synthetic-data implementations under the interfaces defined by <em>doin-core</em>; <em>doin-node</em> resolves those implementations from per-domain configuration without embedding the domain model itself.</p>
 
 <h3>C. Testing</h3>
 
-<p class="no-indent">The implementation includes 291 tests across all five packages, covering unit tests for individual components, integration tests for the full optimization-verification-consensus pipeline, and property-based tests for the game-theoretic invariants (e.g., that honest strategies always yield non-negative expected payoffs).</p>
+<p class="no-indent">As of August 2026, the three active repositories contain 733 collected tests: 280 in <em>doin-core</em>, 409 in <em>doin-node</em>, and 44 in <em>doin-plugins</em>. They cover protocol models and consensus behavior, unified-node networking and coordination, and plugin contracts and integration paths. This test count is implementation evidence; it does not by itself validate the economic assumptions or prove resilience against an unrestricted adversary.</p>
 
 <!-- VIII. CONCLUSION -->
 <h2>VIII. Conclusion and Future Work</h2>
 
-<p class="no-indent">We have presented DOIN, a decentralized network that converts blockchain consensus computation into productive machine learning optimization. The Proof of Optimization consensus mechanism, with its VUW weighting and dynamic threshold adjustment, ensures that all computational work contributing to block production is verifiable and useful. Our game-theoretic analysis demonstrates that honest optimization is a Nash equilibrium under the DOIN incentive structure, and our security analysis addresses 25 identified attack vectors with 10 hardening measures.</p>
+<p class="no-indent">We have presented DOIN, a decentralized network intended to convert blockchain consensus computation into productive machine learning optimization. The Proof of Optimization mechanism combines VUW weighting, dynamic threshold adjustment and domain-specific verification. Under the assumptions stated in the game model, the analysis identifies conditions favoring honest optimization; the security review enumerates 25 attack vectors and maps 10 implemented hardening controls to them.</p>
 
 <p>Several directions for future work remain. First, the theoretical analysis could be extended to consider repeated games with discounting, providing stronger guarantees about long-term behavior. Second, the VUW weighting scheme could incorporate mechanism design principles to optimally allocate optimization effort across domains. Third, privacy-preserving techniques such as secure multi-party computation could be integrated to protect proprietary model architectures while maintaining verifiability. Fourth, large-scale empirical evaluation on real optimization workloads would validate the theoretical predictions regarding convergence and security. Finally, the integration of zero-knowledge proofs for optimization verification could reduce evaluator computational overhead while maintaining the same security guarantees.</p>
 
@@ -595,7 +593,7 @@ ul.compact li { margin-bottom: 1pt; }
 <p><span class="ref-num">[3]</span> B. McMahan, E. Moore, D. Ramage, S. Hampson, and B. A. y Arcas, "Communication-efficient learning of deep networks from decentralized data," in <em>Proc. AISTATS</em>, 2017, pp. 1273–1282.</p>
 <p><span class="ref-num">[4]</span> T. Li, A. K. Sahu, M. Zaheer, M. Sanjabi, A. Talwalkar, and V. Smith, "Federated optimization in heterogeneous networks," in <em>Proc. MLSys</em>, 2020.</p>
 <p><span class="ref-num">[5]</span> M. A. Ferrag, L. Shu, H. Djallel, and K.-K. R. Choo, "Blockchain technologies for the internet of things: Research issues and challenges," <em>IEEE Internet Things J.</em>, vol. 6, no. 2, pp. 2188–2204, 2019.</p>
-<p><span class="ref-num">[6]</span> H. Bastidas, "DInEMMo: Decentralized inference and evaluation of multi-model optimization," Universidad del Valle, Tech. Rep., 2025.</p>
+<p><span class="ref-num">[6]</span> H. D. Bastidas Caicedo, "Computaci&oacute;n Evolutiva Descentralizada de Modelo H&iacute;brido usando Blockchain y Prueba de Trabajo de Optimizaci&oacute;n," Master's thesis, Pontificia Universidad Javeriana Cali, 2018.</p>
 <p><span class="ref-num">[7]</span> T. McConaghy et al., "Ocean Protocol: A decentralized substrate for AI data and services," Ocean Protocol Foundation, Tech. Rep., 2020.</p>
 <p><span class="ref-num">[8]</span> S. King, "Primecoin: Cryptocurrency with prime number proof-of-work," 2013. [Online]. Available: http://primecoin.io/bin/primecoin-paper.pdf</p>
 <p><span class="ref-num">[9]</span> R. Halford, "Gridcoin: Crypto-currency using Berkeley Open Infrastructure for Network Computing as a proof of work," 2014.</p>

@@ -12,6 +12,20 @@ plugins are discovered. It contains no runtime: nodes, networking loops,
 storage, and analytics live in
 [doin-node](https://github.com/harveybc/doin-node).
 
+## Research origin
+
+DOIN descends from Harvey Demian Bastidas Caicedo's 2018 Master's in
+Engineering thesis at Pontificia Universidad Javeriana Cali, *Computación
+Evolutiva Descentralizada de Modelo Híbrido usando Blockchain y Prueba de
+Trabajo de Optimización*. The thesis introduced a decentralized evolutionary
+computation platform whose blockchain used optimization progress as useful
+proof of work. The current DOIN implementation extends that research and has
+since replaced the original multi-client architecture with the unified
+`doin-node` runtime.
+
+Read the original thesis:
+[PDF](<docs/Hybrid-Model Decentralized Evolutionary Computing Using Blockchain and Proof-of-Work Optimization.pdf>).
+
 ## Run this with an AI agent
 
 Paste this into Claude Code, Cursor, Codex, GitHub Copilot or any coding agent
