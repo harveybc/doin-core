@@ -23,8 +23,12 @@ proof of work. The current DOIN implementation extends that research and has
 since replaced the original multi-client architecture with the unified
 `doin-node` runtime.
 
-Read the original thesis:
-[PDF](<docs/Hybrid-Model Decentralized Evolutionary Computing Using Blockchain and Proof-of-Work Optimization.pdf>).
+Read the public edition of the thesis:
+[Hybrid-Model Decentralized Evolutionary Computing Using Blockchain and Proof-of-Work Optimization](<docs/Hybrid-Model Decentralized Evolutionary Computing Using Blockchain and Proof-of-Work Optimization.pdf>).
+The public PDF omits two administrative front-matter pages that contained
+personal contact information; its research content is unchanged. A searchable
+[bibliographic page](docs/THESIS.md) provides the English and original Spanish
+titles.
 
 ## Run this with an AI agent
 
