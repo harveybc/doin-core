@@ -16,12 +16,15 @@ from datetime import datetime, timezone
 import pytest
 
 from doin_core.archive.body import (
+    DIGEST_IDENTITY,
     MANIFEST_SCHEMA,
     UNANCHORED_SCHEMA,
     ArchiveRefusal,
     build_archive,
     canonical_bytes,
     digest_bytes,
+    verify_archive_bytes,
+    verify_envelope,
 )
 from doin_core.crypto.hashing import compute_merkle_root
 from doin_core.models import Block, BlockHeader, Transaction, TransactionType
@@ -259,3 +262,80 @@ class TestManifest:
         again = _candidate("same", won=False, attempt=2, performance=0.2)
         with pytest.raises(ArchiveRefusal, match="DUPLICATE_RECORD"):
             build_archive(block=_block(), candidates=[one], retries=[again])
+
+
+class TestSharedVerification:
+    """O03/AT02. Reconstruction reads stored bytes, not a caller's section objects."""
+
+    def test_digest_identity_is_declared(self) -> None:
+        assert "body_digest" in DIGEST_IDENTITY
+        assert "manifest_digest" in DIGEST_IDENTITY
+        assert "header_hash" in DIGEST_IDENTITY
+        assert "not substitutes" in DIGEST_IDENTITY
+
+    def test_reconstructs_from_bytes_without_the_envelope_object(self) -> None:
+        env = _archive()
+        sections = {section.digest: section.content for section in env.sections}
+        verified = verify_archive_bytes(
+            body=env.body,
+            manifest=env.manifest,
+            sections=sections,
+        )
+        assert verified.chain_verified is False
+        assert verified.body_digest == env.body_digest
+        assert verified.manifest_digest == env.manifest_digest
+        assert verified.header_hash == env.header_hash
+        assert verified.body_digest != verified.manifest_digest
+        assert verified.body_digest != verified.header_hash
+        assert verified.manifest_digest != verified.header_hash
+        assert [item["record_id"] for item in verified.records] == [
+            "rec-lose-1",
+            "rec-win-1",
+            "rec-lose-2",
+        ]
+        assert verify_envelope(env).manifest_digest == env.manifest_digest
+
+    def test_forged_section_bytes_are_refused(self) -> None:
+        env = _archive()
+        sections = {section.digest: section.content for section in env.sections}
+        original = next(section for section in env.sections if section.name == "candidates")
+        forged = canonical_bytes(
+            [{**json.loads(original.content)[0], "performance": 999.0}]
+        )
+        sections[original.digest] = forged
+        with pytest.raises(ArchiveRefusal, match="DIGEST_MISMATCH"):
+            verify_archive_bytes(body=env.body, manifest=env.manifest, sections=sections)
+
+    def test_reordered_inventory_link_is_refused(self) -> None:
+        env = _archive()
+        manifest = json.loads(env.manifest)
+        manifest["inventory"][1], manifest["inventory"][2] = (
+            manifest["inventory"][2],
+            manifest["inventory"][1],
+        )
+        for seq, item in enumerate(manifest["inventory"]):
+            item["seq"] = seq
+        sections = {section.digest: section.content for section in env.sections}
+        with pytest.raises(ArchiveRefusal, match="INVENTORY_LINK"):
+            verify_archive_bytes(
+                body=env.body,
+                manifest=canonical_bytes(manifest),
+                sections=sections,
+            )
+
+    def test_same_block_candidates_share_body_digest_only(self) -> None:
+        block = _block()
+        first = build_archive(
+            block=block,
+            candidates=[_candidate("rec-a", won=False, attempt=1, performance=0.1)],
+            retries=[],
+        )
+        second = build_archive(
+            block=block,
+            candidates=[_candidate("rec-a", won=False, attempt=1, performance=0.2)],
+            retries=[],
+        )
+        assert first.body_digest == second.body_digest
+        assert first.manifest_digest != second.manifest_digest
+        assert first.header_hash == second.header_hash
+        assert first.body_digest != first.header_hash
