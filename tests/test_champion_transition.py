@@ -108,3 +108,40 @@ def test_fork_work_rejects_conflicting_duplicate():
                 "payload": {"optimae_id": "opt", "effective_increment": work}}
     with pytest.raises(ValueError):
         ForkChoiceRule().score_chain("hash", 2, [{"height": 1, "transactions": [tx(10), tx(20)]}])
+
+
+def test_non_genesis_block_requires_an_accepted_improvement():
+    block = candidate(-0.2)
+    block.transactions.clear()
+    with pytest.raises(ValueError, match="BLOCK_WITHOUT_CHAMPION_IMPROVEMENT"):
+        advance_champions(block, {}, set(), {"d": False})
+
+
+@pytest.mark.parametrize("field", ["effective_increment", "increment"])
+def test_forged_work_cannot_buy_a_heavier_fork(field):
+    block = candidate(-0.100000001)
+    block.transactions[0].payload[field] = 1e12
+    with pytest.raises(ValueError, match="ACCEPTANCE_WORK_EXCEEDS_IMPROVEMENT"):
+        advance_champions(block, {"d": -0.1}, set(), {"d": False})
+
+
+def test_header_cannot_invent_work_after_a_small_real_improvement():
+    block = candidate(-0.100000001)
+    block.header.weighted_performance_sum = 1e12
+    with pytest.raises(ValueError, match="BLOCK_WORK_EXCEEDS_IMPROVEMENT"):
+        advance_champions(block, {"d": -0.1}, set(), {"d": False})
+
+
+def test_raw_work_must_equal_the_actual_champion_increment():
+    block = candidate(-0.2)
+    block.transactions[0].payload['raw_increment'] = 0.2
+    with pytest.raises(ValueError, match="ACCEPTANCE_RAW_WORK_MISMATCH"):
+        advance_champions(block, {"d": -0.1}, set(), {"d": False})
+
+
+def test_configured_incentives_and_domain_weight_keep_their_existing_effect():
+    block = candidate(-0.3)
+    block.transactions[0].payload.update(raw_increment=0.2, effective_increment=0.26)
+    block.header.weighted_performance_sum = 0.13
+    advance_champions(block, {'d': -0.1}, set(), {'d': False},
+                      max_work_multipliers={'d': 1.3}, domain_weights={'d': 0.5})

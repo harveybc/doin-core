@@ -99,6 +99,9 @@ def advance_champions(
     best: Mapping[str, float],
     seen: set[tuple[str, str]],
     higher_is_better: Mapping[str, bool],
+    *,
+    max_work_multipliers: Mapping[str, float] | None = None,
+    domain_weights: Mapping[str, float] | None = None,
 ) -> tuple[dict[str, float], set[tuple[str, str]]]:
     """Validate a block against its parent state, returning new copies only.
 
@@ -106,7 +109,11 @@ def advance_champions(
     uncommitted champion. Failure leaves both input collections unchanged.
     """
     updated, identities = dict(best), set(seen)
-    for record in acceptance_records(block):
+    records = acceptance_records(block)
+    if block.header.index > 0 and not records:
+        raise ValueError("BLOCK_WITHOUT_CHAMPION_IMPROVEMENT")
+    maximum_block_work = 0.0
+    for record in records:
         domain = record.domain_id
         if domain not in higher_is_better:
             raise ValueError("UNKNOWN_DOMAIN")
@@ -122,6 +129,27 @@ def advance_champions(
             improves = value > previous if higher_is_better[domain] else value < previous
             if not improves:
                 raise ValueError("CHAMPION_NOT_IMPROVED")
+        gain = performance_gain(value, previous, higher_is_better[domain])
+        raw = record.payload.get("raw_increment")
+        if raw is not None and not math.isclose(finite_score(raw), gain, rel_tol=1e-12, abs_tol=0):
+            raise ValueError("ACCEPTANCE_RAW_WORK_MISMATCH")
+        # VUW and reputation factors are at most one. Preserve the configured
+        # incentive bonus while bounding work by the actual parent-to-child gain.
+        multiplier = finite_score((max_work_multipliers or {}).get(domain, 1.2))
+        weight = finite_score((domain_weights or {}).get(domain, 1.0))
+        if multiplier < 0 or weight < 0:
+            raise ValueError("INVALID_WORK_POLICY")
+        maximum = gain * multiplier
+        work = record.payload.get("effective_increment", record.payload.get("increment"))
+        if work is not None:
+            work = finite_score(work)
+            if work > maximum and not math.isclose(work, maximum, rel_tol=1e-12, abs_tol=0):
+                raise ValueError("ACCEPTANCE_WORK_EXCEEDS_IMPROVEMENT")
+        maximum_block_work += maximum * weight
         updated[domain] = value
         identities.add(key)
+    declared = finite_score(block.header.weighted_performance_sum)
+    if records and (declared < 0 or (declared > maximum_block_work and not math.isclose(
+            declared, maximum_block_work, rel_tol=1e-12, abs_tol=0))):
+        raise ValueError("BLOCK_WORK_EXCEEDS_IMPROVEMENT")
     return updated, identities
