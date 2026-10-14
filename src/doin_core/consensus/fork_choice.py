@@ -20,6 +20,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from doin_core.consensus.champion import finite_score
+
 
 @dataclass
 class ChainScore:
@@ -84,6 +86,7 @@ class ForkChoiceRule:
         cumulative = 0.0
         accepted_count = 0
         checkpoint_consistent = True
+        accepted: dict[tuple[str, str], tuple[str, float | None]] = {}
 
         for block in blocks:
             block_height = block.get("height", 0)
@@ -102,8 +105,30 @@ class ForkChoiceRule:
                 payload = tx.get("payload", {})
 
                 if tx_type == "optimae_accepted":
-                    accepted_count += 1
-                    cumulative += abs(payload.get("effective_increment", 0.0))
+                    raw = payload.get("effective_increment", payload.get("increment"))
+                    work = finite_score(raw) if raw is not None else None
+                    if work is not None and work < 0:
+                        raise ValueError("INVALID_ACCEPTANCE_WORK")
+                    identity = payload.get("optimae_id")
+                    if identity is None:
+                        # Keep the public scorer's legacy anonymous input API;
+                        # block validation requires an identity in real chains.
+                        accepted_count += 1
+                        cumulative += work or 0.0
+                        continue
+                    key = (tx.get("domain_id", ""), identity)
+                    peer = tx.get("peer_id", "")
+                    if key in accepted:
+                        prior_peer, prior_work = accepted[key]
+                        if peer != prior_peer or (work is not None and prior_work is not None and work != prior_work):
+                            raise ValueError("CONFLICTING_ACCEPTANCE_WORK")
+                        if prior_work is None and work is not None:
+                            cumulative += work
+                            accepted[key] = (peer, work)
+                    else:
+                        accepted[key] = (peer, work)
+                        accepted_count += 1
+                        cumulative += work or 0.0
 
         score = ChainScore(
             tip_hash=tip_hash,

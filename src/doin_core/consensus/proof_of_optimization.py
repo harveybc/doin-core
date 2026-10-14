@@ -78,7 +78,9 @@ class ProofOfOptimization:
             peer_id=optimae.optimizer_id,
             payload={
                 "optimae_id": optimae.id,
-                "performance": optimae.verified_performance or optimae.reported_performance,
+                "performance": (optimae.verified_performance
+                                if optimae.verified_performance is not None
+                                else optimae.reported_performance),
                 "increment": optimae.performance_increment,
             },
         )
